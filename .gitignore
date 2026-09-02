@@ -12,6 +12,19 @@ dist
 dist-ssr
 *.local
 
+# 环境变量（含密钥，严禁提交）
+.env
+.env.*
+!.env.example
+
+# 一次性数据生成脚本（内含硬编码密钥，严禁提交）
+translate-examples.cjs
+gen-example-zh.cjs
+en-example-zh.json
+
+# 账号交接档案（含密钥，仅本地保存）
+*.mc
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
