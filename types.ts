@@ -55,6 +55,7 @@ export interface StoryData {
   titleZh: string;
   titleEn: string;
   storyZh: string;
+  storyZhHk?: string;   // 地道粤语口语版正文（隐藏字段，仅供粤语朗读，不显示）
   storyEn: string;
   words: StoryWordItem[];
   createdAt: number;
@@ -71,13 +72,32 @@ export interface PetItem {
   exp: number;
   enchantLevel?: number; // 附魔等级 0-5
   evolutionStage?: 1 | 2 | 3; // 1: 幼崽萌态, 2: 元素进阶, 3: 觉醒神兽
-  hunger: number; // 0-100
-  happiness: number; // 0-100
+  hunger: number; // 饱食度 0-100
+  happiness: number; // 开心值 0-100
+  cleanliness?: number; // 清洁度 0-100
+  energy?: number; // 精力值 0-100
   unlocked: boolean;
   cost: number;
   accessory?: string;
   cheerPhrases: string[];
   mistakePhrases: string[];
+  chatPhrases?: string[]; // 日常闲聊（陪伴感）
+}
+
+// 宠物互动道具（每种道具配独特宠物动作）
+export interface PetTool {
+  id: string;
+  name: string;
+  emoji: string;
+  category: 'food' | 'toy' | 'care' | 'sleep';
+  cost: number;
+  hungerAdd: number;   // 饱食
+  happyAdd: number;    // 开心
+  cleanAdd: number;    // 清洁
+  energyAdd: number;    // 精力（负数=玩耍消耗）
+  animClass: string;   // 宠物独特动作
+  particles: string;   // 粒子特效
+  desc: string;        // 效果描述
 }
 
 // 宠物饰品

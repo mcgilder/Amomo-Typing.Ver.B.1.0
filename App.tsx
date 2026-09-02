@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Mode, Tab, TypingStats, ExerciseItem, PetItem, PetAccessory, Achievement } from './types';
+import { Mode, Tab, TypingStats, ExerciseItem, PetItem, PetAccessory, PetTool, Achievement } from './types';
 import { TEXTBOOK_RESOURCES, KEYBOARD_LAYOUT } from './constants';
+import { EN_EXAMPLE_ZH } from './enExampleZh';
 import {
   speakDirect,
   prewarmSpeech,
@@ -15,7 +16,7 @@ import Keyboard from './components/Keyboard';
 import Statistics, { INITIAL_ACHIEVEMENTS } from './components/Statistics';
 import TypingGame from './components/TypingGame';
 import StoryGenerator from './components/StoryGenerator';
-import DesktopPet, { INITIAL_PETS, ACCESSORIES, FoodItem } from './components/DesktopPet';
+import DesktopPet, { INITIAL_PETS, ACCESSORIES } from './components/DesktopPet';
 import FloatingCompanion from './components/FloatingCompanion';
 
 const LOCAL_STORAGE_KEY_STATS = 'amomo_typing_stats_v2';
@@ -23,6 +24,14 @@ const LOCAL_STORAGE_KEY_PETS = 'amomo_typing_pets_v2';
 const LOCAL_STORAGE_KEY_COINS = 'amomo_typing_coins_v2';
 const LOCAL_STORAGE_KEY_ACC = 'amomo_typing_accessories_v2';
 const LOCAL_STORAGE_KEY_ACHIEVEMENTS = 'amomo_typing_achievements_v2';
+
+// 旧版存档升级：补齐新字段
+const normalizePets = (pets: PetItem[]): PetItem[] =>
+  pets.map(p => ({
+    ...p,
+    cleanliness: p.cleanliness ?? 80,
+    energy: p.energy ?? 80
+  }));
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.PRACTICE);
@@ -34,6 +43,8 @@ export const App: React.FC = () => {
   const [isStarted, setIsStarted] = useState(false);
   const [isRandom, setIsRandom] = useState(false);
   const [isWaitingForSpace, setIsWaitingForSpace] = useState(false);
+  // 根容器引用：自动聚焦，保证进入练习页后直接敲键盘就能输入（无需先点击页面）
+  const rootRef = useRef<HTMLDivElement>(null);
 
   // Custom Practice/Story title
   const [customPracticeTitle, setCustomPracticeTitle] = useState<string>('');
@@ -62,7 +73,7 @@ export const App: React.FC = () => {
   const [pets, setPets] = useState<PetItem[]>(() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY_PETS);
-      return saved ? JSON.parse(saved) : INITIAL_PETS;
+      return saved ? normalizePets(JSON.parse(saved)) : INITIAL_PETS;
     } catch {
       return INITIAL_PETS;
     }
@@ -107,33 +118,23 @@ export const App: React.FC = () => {
 
   // Save to localStorage
   useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY_COINS, coins.toString());
-    } catch (e) {}
+    try { localStorage.setItem(LOCAL_STORAGE_KEY_COINS, coins.toString()); } catch (e) {}
   }, [coins]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY_PETS, JSON.stringify(pets));
-    } catch (e) {}
+    try { localStorage.setItem(LOCAL_STORAGE_KEY_PETS, JSON.stringify(pets)); } catch (e) {}
   }, [pets]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY_ACC, JSON.stringify(accessories));
-    } catch (e) {}
+    try { localStorage.setItem(LOCAL_STORAGE_KEY_ACC, JSON.stringify(accessories)); } catch (e) {}
   }, [accessories]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY_ACHIEVEMENTS, JSON.stringify(achievements));
-    } catch (e) {}
+    try { localStorage.setItem(LOCAL_STORAGE_KEY_ACHIEVEMENTS, JSON.stringify(achievements)); } catch (e) {}
   }, [achievements]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY_STATS, JSON.stringify(sessionStats));
-    } catch (e) {}
+    try { localStorage.setItem(LOCAL_STORAGE_KEY_STATS, JSON.stringify(sessionStats)); } catch (e) {}
   }, [sessionStats]);
 
   // Current active pet
@@ -274,7 +275,6 @@ export const App: React.FC = () => {
       prev.map(ach => {
         if (ach.unlocked) return ach;
         let shouldUnlock = false;
-        let newProgress = ach.progress;
 
         if (ach.id === 'speed_demon' && wpm >= 25) shouldUnlock = true;
         if (ach.id === 'perfect_accuracy' && accuracy === 100 && currentStats.total >= 5) shouldUnlock = true;
@@ -284,7 +284,7 @@ export const App: React.FC = () => {
           setCoins(c => c + ach.rewardCoins);
           return { ...ach, unlocked: true, unlockedAt: '刚刚', progress: ach.maxProgress };
         }
-        return { ...ach, progress: newProgress };
+        return ach;
       })
     );
   };
@@ -339,6 +339,12 @@ export const App: React.FC = () => {
     }
   };
 
+  // 自动聚焦：页面加载 / 切到练习页 / 开始练习时，让根容器获得键盘焦点
+  // 孩子不用先点击页面任意位置，直接敲键盘就能打字
+  useEffect(() => {
+    rootRef.current?.focus({ preventScroll: true });
+  }, [activeTab, isStarted]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (!isStarted || activeTab !== Tab.PRACTICE) return;
@@ -364,7 +370,7 @@ export const App: React.FC = () => {
         const nextBuffer = inputBuffer + char;
         setInputBuffer(nextBuffer);
         setCurrentStats(prev => ({ ...prev, correct: prev.correct + 1 }));
-        
+
         const newCombo = combo + 1;
         setCombo(newCombo);
         if (newCombo > maxComboInSession) {
@@ -409,7 +415,7 @@ export const App: React.FC = () => {
   const handleStartTargetedPractice = (weakKeys: string[]) => {
     const drillItems: ExerciseItem[] = [];
     const allWords = Object.values(TEXTBOOK_RESOURCES['英语']).flat();
-    
+
     allWords.forEach(w => {
       const match = weakKeys.some(k => w.text.toLowerCase().includes(k.toLowerCase()));
       if (match && drillItems.length < 15) {
@@ -473,19 +479,23 @@ export const App: React.FC = () => {
     setCurrentPetId(id);
   };
 
-  const handleFeedPet = (food: FoodItem) => {
-    if (coins < food.cost) {
+  // 使用互动道具（四维状态更新 + 附魔台通用入口）
+  const handleUseTool = (tool: PetTool) => {
+    if (coins < tool.cost) {
       playSoundEffect('error');
       return;
     }
-    playSoundEffect('coin');
-    setCoins(c => c - food.cost);
+    setCoins(c => c - tool.cost);
     setPets(prev =>
       prev.map(p => {
         if (p.id === currentPetId) {
-          const newHunger = Math.min(100, p.hunger + food.hungerAdd);
-          const newHappy = Math.min(100, p.happiness + food.happyAdd);
-          return { ...p, hunger: newHunger, happiness: newHappy };
+          return {
+            ...p,
+            hunger: Math.max(0, Math.min(100, p.hunger + tool.hungerAdd)),
+            happiness: Math.max(0, Math.min(100, p.happiness + tool.happyAdd)),
+            cleanliness: Math.max(0, Math.min(100, (p.cleanliness ?? 80) + tool.cleanAdd)),
+            energy: Math.max(0, Math.min(100, (p.energy ?? 80) + tool.energyAdd))
+          };
         }
         return p;
       })
@@ -542,7 +552,9 @@ export const App: React.FC = () => {
             enchantLevel: nextEnchant,
             evolutionStage: Math.max(p.evolutionStage || 1, nextStage) as 1 | 2 | 3,
             happiness: 100,
-            hunger: 100
+            hunger: 100,
+            cleanliness: 100,
+            energy: 100
           };
         }
         return p;
@@ -551,100 +563,67 @@ export const App: React.FC = () => {
     awardPetExp(40);
   };
 
+  const TAB_ITEMS: { id: Tab; icon: string; label: string; color: string; shadow: string }[] = [
+    { id: Tab.PRACTICE, icon: '⌨️', label: '学打字', color: 'bg-[#FF8A5C]', shadow: 'shadow-[0_4px_0_#E0633A]' },
+    { id: Tab.STORY, icon: '📖', label: 'AI故事', color: 'bg-[#A57DE0]', shadow: 'shadow-[0_4px_0_#8258C7]' },
+    { id: Tab.GAME, icon: '🎮', label: '游戏乐园', color: 'bg-[#6BCB77]', shadow: 'shadow-[0_4px_0_#48A757]' },
+    { id: Tab.PET, icon: '🐱', label: '萌宠小屋', color: 'bg-[#FF8FAB]', shadow: 'shadow-[0_4px_0_#E0678A]' },
+    { id: Tab.STATS, icon: '📊', label: '成长档案', color: 'bg-[#4FB8E7]', shadow: 'shadow-[0_4px_0_#2E93C4]' }
+  ];
+
   return (
     <div
-      className="min-h-screen flex flex-col font-sans bg-[#f8fbff] text-gray-800 outline-none select-none"
+      ref={rootRef}
+      className="min-h-screen flex flex-col font-sans text-[#5B4636] outline-none select-none"
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
       {/* Top Main Navigation */}
-      <nav className="flex justify-between items-center px-6 py-3.5 bg-white/95 backdrop-blur-md shadow-sm border-b-2 border-blue-100 sticky top-0 z-30 flex-wrap gap-3">
+      <nav className="flex justify-between items-center px-5 py-3 bg-white/85 backdrop-blur-md border-b-4 border-[#FFE8C8] sticky top-0 z-30 flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-md">
+          <div className="w-12 h-12 bg-gradient-to-tr from-[#FF8A5C] via-[#FFC94D] to-[#6BCB77] rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-[0_4px_0_#E8A317] animate-breathe">
             墨
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black tracking-tight text-gray-800 font-kids">
-                阿墨墨打字通
-              </h1>
-              <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-200">
+              <h1 className="text-2xl font-black tracking-tight font-kids">阿墨墨打字通</h1>
+              <span className="bg-[#FFF3D6] text-[#8A5F00] text-[10px] font-black px-2 py-0.5 rounded-full border-2 border-[#FFE3A3]">
                 儿童护眼专属
               </span>
             </div>
-            <p className="text-[11px] text-gray-400 font-medium">人教版同步 • 拼音英语 • AI分级童话 • 萌宠相伴</p>
+            <p className="text-[11px] text-[#8A6F5C] font-bold">人教版同步 · 拼音英语 · AI分级童话 · 萌宠相伴</p>
           </div>
         </div>
 
         {/* Center Tabs */}
-        <div className="flex items-center gap-1.5 bg-gray-100 p-1.5 rounded-2xl">
-          <button
-            onClick={() => { playSoundEffect('click'); setActiveTab(Tab.PRACTICE); }}
-            className={`px-4 py-2 rounded-xl text-sm font-black transition-all flex items-center gap-1.5 ${
-              activeTab === Tab.PRACTICE
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <span>⌨️</span> 学习打字
-          </button>
-
-          <button
-            onClick={() => { playSoundEffect('click'); setActiveTab(Tab.STORY); }}
-            className={`px-4 py-2 rounded-xl text-sm font-black transition-all flex items-center gap-1.5 ${
-              activeTab === Tab.STORY
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <span>📖</span> AI 故事词汇
-          </button>
-
-          <button
-            onClick={() => { playSoundEffect('click'); setActiveTab(Tab.GAME); }}
-            className={`px-4 py-2 rounded-xl text-sm font-black transition-all flex items-center gap-1.5 ${
-              activeTab === Tab.GAME
-                ? 'bg-amber-500 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <span>🎮</span> 趣味游戏
-          </button>
-
-          <button
-            onClick={() => { playSoundEffect('click'); setActiveTab(Tab.PET); }}
-            className={`px-4 py-2 rounded-xl text-sm font-black transition-all flex items-center gap-1.5 ${
-              activeTab === Tab.PET
-                ? 'bg-orange-500 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <span>🐱</span> 萌宠庄园
-          </button>
-
-          <button
-            onClick={() => { playSoundEffect('click'); setActiveTab(Tab.STATS); }}
-            className={`px-4 py-2 rounded-xl text-sm font-black transition-all flex items-center gap-1.5 ${
-              activeTab === Tab.STATS
-                ? 'bg-emerald-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <span>📊</span> 成长档案
-          </button>
+        <div className="flex items-center gap-1.5 bg-[#FFF8EE] p-1.5 rounded-2xl border-3 border-[#FFE8C8]">
+          {TAB_ITEMS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => { playSoundEffect('click'); setActiveTab(tab.id); }}
+              className={`px-4 py-2 rounded-xl text-sm font-black transition-all flex items-center gap-1.5 ${
+                activeTab === tab.id
+                  ? `${tab.color} text-white ${tab.shadow}`
+                  : 'text-[#8A6F5C] hover:bg-white'
+              }`}
+            >
+              <span>{tab.icon}</span>
+              <span className="hidden md:inline">{tab.label}</span>
+            </button>
+          ))}
         </div>
 
-        {/* Right Status (Coins & Audio Settings) */}
+        {/* Right Status */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3.5 py-1.5 rounded-2xl shadow-inner">
-            <span className="text-xl">🪙</span>
-            <span className="text-base font-black text-amber-900">{coins}</span>
+          <div className="flex items-center gap-1.5 bg-[#FFF3D6] border-3 border-[#FFE3A3] px-3.5 py-1.5 rounded-2xl shadow-[0_3px_0_rgba(232,163,23,0.3)]">
+            <span className="text-xl animate-float-y">🪙</span>
+            <span className="text-base font-black text-[#8A5F00]">{coins}</span>
           </div>
 
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg border transition-all ${
-              soundEnabled ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-gray-100 border-gray-200 text-gray-400'
+            className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg border-3 transition-all active:scale-90 ${
+              soundEnabled ? 'bg-[#E3F2FA] border-[#BBE2F2] text-[#2E93C4]' : 'bg-[#FFF8EE] border-[#FFE8C8] text-[#C4AE97]'
             }`}
             title={soundEnabled ? '语音音效开启' : '静音模式'}
           >
@@ -658,33 +637,27 @@ export const App: React.FC = () => {
         {/* TAB 1: PRACTICE */}
         {activeTab === Tab.PRACTICE && (
           <div className="w-full flex flex-col items-center gap-6 animate-fade-in">
-            {/* Top Toolbar for Practice */}
-            <div className="w-full flex justify-between items-center bg-white p-4 rounded-3xl shadow-sm border border-blue-50 flex-wrap gap-4">
+            {/* Top Toolbar */}
+            <div className="w-full story-card p-4 flex justify-between items-center flex-wrap gap-4">
               <div className="flex items-center gap-3 flex-wrap">
                 {/* Language Switch */}
-                <div className="flex p-1 bg-gray-100 rounded-2xl">
+                <div className="flex p-1 bg-[#FFF8EE] rounded-2xl border-3 border-[#FFE8C8]">
                   <button
-                    onClick={() => {
-                      setMode(Mode.ENGLISH);
-                      setCustomPracticeTitle('');
-                    }}
+                    onClick={() => { setMode(Mode.ENGLISH); setCustomPracticeTitle(''); }}
                     className={`px-5 py-2 rounded-xl text-sm font-black transition-all ${
                       mode === Mode.ENGLISH && !customPracticeTitle
-                        ? 'bg-white shadow-md text-blue-600'
-                        : 'text-gray-500'
+                        ? 'bg-white shadow-[0_3px_0_rgba(222,184,135,0.3)] text-[#E0633A]'
+                        : 'text-[#8A6F5C]'
                     }`}
                   >
                     🔤 英语
                   </button>
                   <button
-                    onClick={() => {
-                      setMode(Mode.CHINESE);
-                      setCustomPracticeTitle('');
-                    }}
+                    onClick={() => { setMode(Mode.CHINESE); setCustomPracticeTitle(''); }}
                     className={`px-5 py-2 rounded-xl text-sm font-black transition-all ${
                       mode === Mode.CHINESE && !customPracticeTitle
-                        ? 'bg-white shadow-md text-orange-600'
-                        : 'text-gray-500'
+                        ? 'bg-white shadow-[0_3px_0_rgba(222,184,135,0.3)] text-[#48A757]'
+                        : 'text-[#8A6F5C]'
                     }`}
                   >
                     🇨🇳 语文拼音
@@ -693,21 +666,18 @@ export const App: React.FC = () => {
 
                 {/* Textbook Selector or Custom Title */}
                 {customPracticeTitle ? (
-                  <div className="bg-purple-50 border border-purple-200 text-purple-800 px-4 py-2 rounded-2xl text-xs font-black flex items-center gap-2">
+                  <div className="bg-[#F3E9FA] border-3 border-[#E2D0F2] text-[#8258C7] px-4 py-2 rounded-2xl text-xs font-black flex items-center gap-2">
                     <span>✨ {customPracticeTitle}</span>
                     <button
-                      onClick={() => {
-                        setCustomPracticeTitle('');
-                        updateList(selectedBook, mode, isRandom);
-                      }}
-                      className="text-purple-400 hover:text-purple-600 ml-1"
+                      onClick={() => { setCustomPracticeTitle(''); updateList(selectedBook, mode, isRandom); }}
+                      className="text-[#A57DE0] hover:text-[#8258C7] ml-1 text-sm"
                     >
                       ✕
                     </button>
                   </div>
                 ) : (
                   <select
-                    className="bg-blue-50 border border-blue-100 px-4 py-2 rounded-2xl text-xs md:text-sm font-black outline-none text-blue-950 min-w-[220px]"
+                    className="bg-white border-3 border-[#FFE8C8] px-4 py-2 rounded-2xl text-xs md:text-sm font-black outline-none text-[#5B4636] shadow-[0_3px_0_rgba(222,184,135,0.25)] min-w-[220px]"
                     value={selectedBook}
                     onChange={(e) => {
                       setSelectedBook(e.target.value);
@@ -723,10 +693,10 @@ export const App: React.FC = () => {
                 {/* Order Toggle */}
                 <button
                   onClick={() => setIsRandom(!isRandom)}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-black transition-all ${
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border-3 text-xs font-black transition-all active:scale-95 ${
                     isRandom
-                      ? 'bg-purple-100 border-purple-300 text-purple-700'
-                      : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                      ? 'bg-[#F3E9FA] border-[#E2D0F2] text-[#8258C7]'
+                      : 'bg-white border-[#FFE8C8] text-[#8A6F5C] hover:border-[#FFC94D]'
                   }`}
                 >
                   <span>{isRandom ? '🔀' : '➡'}</span>
@@ -734,111 +704,95 @@ export const App: React.FC = () => {
                 </button>
 
                 {/* Praise Dialect Selector */}
-                <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-600">
+                <div className="flex items-center gap-1 bg-[#FFF8EE] border-3 border-[#FFE8C8] px-3 py-1.5 rounded-2xl text-xs font-bold text-[#8A6F5C]">
                   <span>🗣️ 夸奖音效:</span>
                   <select
                     value={praiseDialect}
                     onChange={(e) => setPraiseDialect(e.target.value as any)}
-                    className="bg-transparent font-black text-blue-600 outline-none cursor-pointer"
+                    className="bg-transparent font-black text-[#E0633A] outline-none cursor-pointer"
                   >
-                    <option value="cantonese">粤语（好叻啊 / 犀利）</option>
-                    <option value="mandarin">普通话（太棒了 / 神速）</option>
-                    <option value="english">English (Awesome / Great)</option>
+                    <option value="cantonese">粤语（好叻啊）</option>
+                    <option value="mandarin">普通话（太棒了）</option>
+                    <option value="english">English</option>
                   </select>
                 </div>
               </div>
 
               {/* Start / Stop Button */}
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={handleStartStop}
-                  className={`px-8 py-3 rounded-2xl text-base md:text-lg font-black shadow-lg transition-all active:scale-95 flex items-center gap-2 ${
-                    isStarted
-                      ? 'bg-rose-500 hover:bg-rose-600 text-white'
-                      : 'bg-emerald-500 hover:bg-emerald-600 text-white animate-pulse'
-                  }`}
-                >
-                  <span>{isStarted ? '⏹ 结束练习' : '▶ 开始练习'}</span>
-                </button>
-              </div>
+              <button
+                onClick={handleStartStop}
+                className={`btn-candy px-8 py-3 text-base md:text-lg ${isStarted ? 'bg-[#FF8FAB] shadow-[0_5px_0_#E0678A] active:shadow-[0_1px_0_#E0678A]' : 'btn-grass animate-pulse'}`}
+              >
+                <span>{isStarted ? '⏹ 结束练习' : '▶ 开始练习'}</span>
+              </button>
             </div>
 
             {/* Target Word Practice Card */}
-            <div className="w-full bg-white rounded-[2.5rem] p-8 md:p-12 shadow-xl border-4 border-blue-50/50 flex flex-col items-center min-h-[420px] justify-center relative overflow-hidden">
-              {/* Progress Bar */}
-              <div
-                className="absolute top-0 left-0 h-2.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              ></div>
+            <div className="w-full story-card p-8 md:p-12 flex flex-col items-center min-h-[420px] justify-center relative overflow-hidden">
+              {/* 进度条 */}
+              <div className="absolute top-0 left-0 h-2.5 bg-gradient-to-r from-[#FF8A5C] via-[#FFC94D] to-[#6BCB77] rounded-r-full transition-all duration-300" style={{ width: `${progress}%` }} />
 
               {/* Top Progress & Combo Pill */}
-              <div className="absolute top-4 left-6 right-6 flex justify-between items-center text-xs font-bold text-gray-400">
-                <span>
-                  进度: {currentIndex + 1} / {exerciseList.length || 1} 词
-                </span>
+              <div className="absolute top-4 left-6 right-6 flex justify-between items-center text-xs font-bold text-[#8A6F5C]">
+                <span>📖 进度: {currentIndex + 1} / {exerciseList.length || 1} 词</span>
                 {combo > 1 && (
-                  <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-black text-xs animate-bounce border border-amber-300">
-                    🔥 连击 Combo x{combo}
+                  <span className="bg-[#FFF3D6] text-[#8A5F00] px-3 py-1 rounded-full font-black text-xs animate-bounce border-2 border-[#FFE3A3]">
+                    🔥 连击 x{combo}
                   </span>
                 )}
               </div>
 
               {!isStarted ? (
                 <div className="text-center flex flex-col items-center gap-4 py-8">
-                  <div className="text-8xl animate-bounce">🎒</div>
-                  <h3 className="text-2xl md:text-3xl font-black text-gray-700 font-kids">
-                    准备好练习打字了吗？
-                  </h3>
-                  <p className="text-xs md:text-sm text-gray-400 max-w-md">
+                  <div className="text-8xl animate-float-y select-none">🎒</div>
+                  <h3 className="text-2xl md:text-3xl font-black font-kids">准备好练习打字了吗？</h3>
+                  <p className="text-xs md:text-sm text-[#8A6F5C] max-w-md">
                     跟着屏幕提示与键盘指法提示，敲击对应字母，开启快乐打字之旅！
                   </p>
-                  <button
-                    onClick={handleStartStop}
-                    className="mt-2 px-8 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm shadow-md transition-all active:scale-95"
-                  >
+                  <button onClick={handleStartStop} className="btn-candy btn-grass mt-2 px-8 py-3 text-sm">
                     立即开始 🚀
                   </button>
                 </div>
               ) : (
                 <div className="w-full flex flex-col items-center">
                   {/* Chinese PinYin Mode */}
-                  {mode === Mode.CHINESE ? (
-                    <>
-                      {/* Big Hanzi */}
-                      <div className="text-7xl md:text-9xl font-black text-orange-600 mb-4 font-kids leading-none filter drop-shadow-sm">
-                        {exerciseList[currentIndex]?.chinese}
-                      </div>
+              {mode === Mode.CHINESE ? (
+                <>
+                  {/* Big Hanzi */}
+                  <div className="text-7xl md:text-9xl font-black text-[#E0633A] mb-4 font-kids leading-none drop-shadow-sm select-none">
+                    {exerciseList[currentIndex]?.chinese}
+                  </div>
 
-                      {/* Tone Pinyin Display */}
-                      <div className="text-base md:text-xl font-bold text-gray-400 mb-4 font-pinyin">
-                        {getPinyinWithTones(exerciseList[currentIndex]?.chinese || '')}
-                      </div>
+                  {/* 带声调拼音直接融入打字行：敲无调字母，显示带调字母（逐位一一对应） */}
+                  <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-6">
+                    {(() => {
+                      // toned 与 plain 逐字符等长（声调符号替换元音字母，长度不变）
+                      const plainChars = exerciseList[currentIndex]?.text.split('') || [];
+                      const tonedChars = getPinyinWithTones(exerciseList[currentIndex]?.chinese || '').split('');
+                      return plainChars.map((char, i) => {
+                        const isTyped = i < inputBuffer.length;
+                        const isCurrentChar = i === inputBuffer.length && !isWaitingForSpace;
 
-                      {/* Typing Pinyin letters with highlight */}
-                      <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-6">
-                        {exerciseList[currentIndex]?.text.split('').map((char, i) => {
-                          const isTyped = i < inputBuffer.length;
-                          const isCurrentChar = i === inputBuffer.length && !isWaitingForSpace;
-
-                          return (
-                            <div key={i} className="relative flex flex-col items-center">
-                              <span
-                                className={`text-6xl md:text-8xl font-black transition-all font-mono leading-none ${
-                                  isTyped ? 'text-gray-300' : 'text-blue-600'
-                                }`}
-                              >
-                                {char}
-                              </span>
-                              {isCurrentChar && (
-                                <div className="absolute -bottom-3 w-full h-2.5 bg-yellow-400 rounded-full animate-bounce"></div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  ) : (
-                    /* English Mode with Syllable Colors & Visual Space Display */
+                        return (
+                          <div key={i} className="relative flex flex-col items-center">
+                            <span
+                              className={`text-6xl md:text-8xl font-black transition-all font-mono leading-none ${
+                                isTyped ? 'text-[#C4AE97]' : 'text-[#2E93C4]'
+                              }`}
+                            >
+                              {tonedChars[i] ?? char}
+                            </span>
+                            {isCurrentChar && (
+                              <div className="absolute -bottom-3 w-full h-2.5 bg-[#FFC94D] rounded-full animate-bounce" />
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </>
+              ) : (
+                    /* English Mode with Syllable Colors */
                     <div className="flex flex-col items-center">
                       <div className="flex flex-wrap justify-center items-center gap-y-3 mb-6">
                         {(() => {
@@ -859,16 +813,16 @@ export const App: React.FC = () => {
                                         <div
                                           className={`px-3 py-1.5 rounded-xl border-2 border-dashed flex items-center justify-center font-mono font-bold text-sm md:text-base transition-all ${
                                             isTyped
-                                              ? 'bg-gray-100 text-gray-400 border-gray-300'
+                                              ? 'bg-[#F5EBDA] text-[#C4AE97] border-[#EADBC2]'
                                               : isCurrent
-                                              ? 'bg-amber-100 text-amber-900 border-amber-400 animate-pulse scale-105 shadow-sm'
-                                              : 'bg-blue-50 text-blue-400 border-blue-200'
+                                              ? 'bg-[#FFF3D6] text-[#8A5F00] border-[#FFC94D] animate-pulse scale-105'
+                                              : 'bg-[#FFF8EE] text-[#C4AE97] border-[#FFE8C8]'
                                           }`}
                                         >
                                           <span>␣ 空格</span>
                                         </div>
                                         {isCurrent && (
-                                          <div className="absolute -bottom-3 w-3/4 h-2 bg-amber-400 rounded-full animate-bounce"></div>
+                                          <div className="absolute -bottom-3 w-3/4 h-2 bg-[#FFC94D] rounded-full animate-bounce" />
                                         )}
                                       </div>
                                     );
@@ -878,13 +832,13 @@ export const App: React.FC = () => {
                                     <div key={cIndex} className="relative">
                                       <span
                                         className={`text-6xl md:text-8xl font-black transition-all leading-none font-mono ${
-                                          isTyped ? 'text-gray-300' : syllableColor
+                                          isTyped ? 'text-[#C4AE97]' : syllableColor
                                         }`}
                                       >
                                         {char}
                                       </span>
                                       {isCurrent && (
-                                        <div className="absolute -bottom-3 w-full h-2.5 bg-yellow-400 rounded-full animate-bounce"></div>
+                                        <div className="absolute -bottom-3 w-full h-2.5 bg-[#FFC94D] rounded-full animate-bounce" />
                                       )}
                                     </div>
                                   );
@@ -901,10 +855,15 @@ export const App: React.FC = () => {
                   <div className="min-h-24 flex flex-col items-center justify-center">
                     {isWaitingForSpace ? (
                       <div className="flex flex-col items-center animate-fade-in text-center">
-                        <p className="text-xl md:text-3xl text-emerald-600 font-black mb-3 italic leading-tight font-kids">
+                        <p className="text-xl md:text-3xl text-[#48A757] font-black mb-2 italic leading-tight font-kids">
                           "{exerciseList[currentIndex]?.example}"
                         </p>
-                        <div className="bg-amber-100 text-amber-900 border border-amber-300 px-6 py-2 rounded-full text-base md:text-lg font-black animate-pulse flex items-center gap-2 shadow-sm">
+                        {mode === Mode.ENGLISH && EN_EXAMPLE_ZH[exerciseList[currentIndex]?.example || ''] && (
+                          <p className="text-sm md:text-lg text-[#8A6F5C] font-bold mb-3">
+                            {EN_EXAMPLE_ZH[exerciseList[currentIndex]!.example]}
+                          </p>
+                        )}
+                        <div className="bg-[#FFF3D6] text-[#8A5F00] border-3 border-[#FFE3A3] px-6 py-2 rounded-full text-base md:text-lg font-black animate-pulse flex items-center gap-2">
                           <span>⌨️</span> 按下 [ 空格键 Space ] 挑战下一个单词
                         </div>
                       </div>
@@ -913,19 +872,19 @@ export const App: React.FC = () => {
                         {mode === Mode.ENGLISH && (
                           <>
                             <div className="flex items-center gap-3">
-                              <span className="text-2xl md:text-4xl font-black text-blue-600 font-kids">
+                              <span className="text-2xl md:text-4xl font-black text-[#2E93C4] font-kids">
                                 {exerciseList[currentIndex]?.translation}
                               </span>
                               <button
                                 onClick={() => readCurrentItem(exerciseList[currentIndex])}
-                                className="w-9 h-9 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm transition-transform active:scale-90"
+                                className="w-9 h-9 bg-[#E3F2FA] hover:bg-[#BBE2F2] text-[#2E93C4] rounded-full flex items-center justify-center text-sm transition-transform active:scale-90 border-2 border-[#BBE2F2]"
                                 title="重听单词发音"
                               >
                                 🔊
                               </button>
                             </div>
                             {exerciseList[currentIndex]?.phonetic && (
-                              <span className="text-base md:text-lg italic font-mono text-gray-400">
+                              <span className="text-base md:text-lg italic font-mono text-[#8A6F5C]">
                                 {exerciseList[currentIndex]?.phonetic}
                               </span>
                             )}
@@ -934,7 +893,7 @@ export const App: React.FC = () => {
                         {mode === Mode.CHINESE && (
                           <button
                             onClick={() => readCurrentItem(exerciseList[currentIndex])}
-                            className="text-xs bg-orange-50 hover:bg-orange-100 text-orange-600 px-3 py-1 rounded-full font-bold transition-all flex items-center gap-1 border border-orange-200"
+                            className="text-xs bg-[#E5F6EC] hover:bg-[#C8EED4] text-[#357F43] px-3 py-1 rounded-full font-bold transition-all flex items-center gap-1 border-2 border-[#C8EED4]"
                           >
                             <span>🔊 点击朗读读音</span>
                           </button>
@@ -961,28 +920,26 @@ export const App: React.FC = () => {
               </div>
 
               {/* Stats Card */}
-              <div className="lg:col-span-4 bg-white p-6 rounded-[2.5rem] shadow-lg border border-blue-50 flex flex-col justify-around gap-4">
+              <div className="lg:col-span-4 story-card p-6 flex flex-col justify-around gap-4">
                 <div className="text-center">
-                  <span className="text-gray-400 text-xs font-bold block mb-1">精准击键</span>
-                  <span className="text-5xl font-black text-blue-600 font-kids">
-                    {currentStats.correct}
-                  </span>
-                  <span className="text-[11px] text-gray-400 block mt-0.5">次无误击打</span>
+                  <span className="text-[#8A6F5C] text-xs font-bold block mb-1">精准击键</span>
+                  <span className="text-5xl font-black text-[#E0633A] font-kids">{currentStats.correct}</span>
+                  <span className="text-[11px] text-[#8A6F5C] block mt-0.5">次无误击打</span>
                 </div>
 
-                <div className="text-center border-t border-gray-100 pt-4">
-                  <span className="text-gray-400 text-xs font-bold block mb-1">即时速度 (WPM)</span>
-                  <span className="text-5xl font-black text-emerald-500 font-kids">
+                <div className="text-center border-t-2 border-[#F5EBDA] pt-4">
+                  <span className="text-[#8A6F5C] text-xs font-bold block mb-1">即时速度 (WPM)</span>
+                  <span className="text-5xl font-black text-[#48A757] font-kids">
                     {Math.round(
                       currentStats.correct / (((Date.now() - currentStats.startTime) / 1000 / 60) || 1)
                     )}
                   </span>
-                  <span className="text-[11px] text-gray-400 block mt-0.5">字 / 分钟</span>
+                  <span className="text-[11px] text-[#8A6F5C] block mt-0.5">字 / 分钟</span>
                 </div>
 
-                <div className="text-center border-t border-gray-100 pt-4">
-                  <span className="text-gray-400 text-xs font-bold block mb-1">本次已赚取</span>
-                  <span className="text-3xl font-black text-amber-500 font-kids flex items-center justify-center gap-1">
+                <div className="text-center border-t-2 border-[#F5EBDA] pt-4">
+                  <span className="text-[#8A6F5C] text-xs font-bold block mb-1">本次已赚取</span>
+                  <span className="text-3xl font-black text-[#E8A317] font-kids flex items-center justify-center gap-1">
                     <span>+{Math.max(1, Math.round(currentStats.correct * 0.5))}</span>
                     <span className="text-xl">🪙</span>
                   </span>
@@ -992,15 +949,7 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 2: AI STORY GENERATOR */}
-        {activeTab === Tab.STORY && (
-          <StoryGenerator
-            onStartPracticeWithWords={handleStartPracticeWithStoryWords}
-            onStartGameWithWords={handleStartGameWithStoryWords}
-          />
-        )}
-
-        {/* TAB 3: GAMES */}
+        {/* TAB 2: GAMES */}
         {activeTab === Tab.GAME && (
           <TypingGame
             customWordList={gameCustomWords}
@@ -1009,6 +958,14 @@ export const App: React.FC = () => {
               setCoins(c => c + amount);
               awardPetExp(amount * 2);
             }}
+          />
+        )}
+
+        {/* TAB 3: AI STORY GENERATOR */}
+        {activeTab === Tab.STORY && (
+          <StoryGenerator
+            onStartPracticeWithWords={handleStartPracticeWithStoryWords}
+            onStartGameWithWords={handleStartGameWithStoryWords}
           />
         )}
 
@@ -1021,7 +978,7 @@ export const App: React.FC = () => {
             accessories={accessories}
             onSelectPet={handleSelectPet}
             onUnlockPet={handleUnlockPet}
-            onFeedPet={handleFeedPet}
+            onUseTool={handleUseTool}
             onPetPet={handlePetPet}
             onEquipAccessory={handleEquipAccessory}
             onUnlockAccessory={handleUnlockAccessory}

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -8,24 +7,181 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --cream: #FFF8EE;
+            --cream-deep: #FCEFD9;
+            --ink: #5B4636;
+            --ink-soft: #8A6F5C;
+            --coral: #FF8A5C;
+            --coral-deep: #E0633A;
+            --sky: #4FB8E7;
+            --sky-deep: #2E93C4;
+            --grass: #6BCB77;
+            --grass-deep: #48A757;
+            --grape: #A57DE0;
+            --grape-deep: #8258C7;
+            --berry: #FF8FAB;
+            --berry-deep: #E0678A;
+            --honey: #FFC94D;
+            --honey-deep: #E8A317;
+        }
+
         body {
-            font-family: 'Plus Jakarta Sans', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background-color: #f8fbff;
+            font-family: 'Baloo 2', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--cream);
+            background-image:
+                radial-gradient(circle at 12% 8%, rgba(255, 201, 77, 0.12) 0%, transparent 22%),
+                radial-gradient(circle at 88% 12%, rgba(79, 184, 231, 0.10) 0%, transparent 24%),
+                radial-gradient(circle at 85% 90%, rgba(107, 203, 119, 0.10) 0%, transparent 22%),
+                radial-gradient(circle at 10% 85%, rgba(255, 143, 171, 0.10) 0%, transparent 22%);
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
         }
+
         .font-kids {
-            font-family: 'Noto Sans SC', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            font-family: 'Baloo 2', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
             font-weight: 800;
         }
         .font-pinyin {
-            font-family: 'Noto Sans SC', 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Noto Sans SC', 'Baloo 2', sans-serif;
             letter-spacing: 0.08em;
         }
         .font-mono {
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'JetBrains Mono', 'Baloo 2', monospace;
+        }
+
+        /* ============ 糖果按钮系统 ============ */
+        .btn-candy {
+            border-radius: 1.25rem;
+            font-weight: 900;
+            color: #fff;
+            position: relative;
+            transition: transform .08s ease, box-shadow .08s ease, filter .15s ease;
+            user-select: none;
+        }
+        .btn-candy:hover { filter: brightness(1.06); }
+        .btn-candy:active { transform: translateY(4px); }
+        .btn-coral   { background: var(--coral);   box-shadow: 0 5px 0 var(--coral-deep); }
+        .btn-coral:active   { box-shadow: 0 1px 0 var(--coral-deep); }
+        .btn-sky     { background: var(--sky);     box-shadow: 0 5px 0 var(--sky-deep); }
+        .btn-sky:active     { box-shadow: 0 1px 0 var(--sky-deep); }
+        .btn-grass   { background: var(--grass);   box-shadow: 0 5px 0 var(--grass-deep); }
+        .btn-grass:active   { box-shadow: 0 1px 0 var(--grass-deep); }
+        .btn-grape   { background: var(--grape);   box-shadow: 0 5px 0 var(--grape-deep); }
+        .btn-grape:active   { box-shadow: 0 1px 0 var(--grape-deep); }
+        .btn-berry   { background: var(--berry);   box-shadow: 0 5px 0 var(--berry-deep); }
+        .btn-berry:active   { box-shadow: 0 1px 0 var(--berry-deep); }
+        .btn-honey   { background: var(--honey); color: #7A4A00; box-shadow: 0 5px 0 var(--honey-deep); }
+        .btn-honey:active   { box-shadow: 0 1px 0 var(--honey-deep); }
+
+        /* ============ 绘本卡片 ============ */
+        .story-card {
+            background: #fff;
+            border-radius: 1.75rem;
+            border: 3px solid #FFE8C8;
+            box-shadow: 0 6px 0 rgba(222, 184, 135, 0.25);
+        }
+
+        /* ============ 通用动画 ============ */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes floatY {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.045); }
+        }
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+        @keyframes shakeScreen {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-7px); }
+            40% { transform: translateX(7px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+        @keyframes floatScore {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-56px) scale(1.25); }
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(-10%) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(560px) rotate(720deg); opacity: 0; }
+        }
+        @keyframes popBurst {
+            0% { transform: scale(0.4); opacity: 1; }
+            70% { transform: scale(1.35); opacity: 0.9; }
+            100% { transform: scale(1.7); opacity: 0; }
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.35; transform: scale(0.85); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+        @keyframes cloudDrift {
+            0% { transform: translateX(-8%); }
+            100% { transform: translateX(108%); }
+        }
+        @keyframes waterWave {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(-28px); }
+        }
+        @keyframes waterWave2 {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(28px); }
+        }
+        @keyframes splashRing {
+            0% { transform: scale(0.25); opacity: 0.85; }
+            100% { transform: scale(2.1); opacity: 0; }
+        }
+        @keyframes frogLeap {
+            0% { transform: translate(0, 0) scale(1); }
+            35% { transform: translate(calc(var(--leap-x) * 0.4), calc(var(--leap-y) * 0.5 - 58px)) scale(1.28); }
+            65% { transform: translate(calc(var(--leap-x) * 0.75), calc(var(--leap-y) * 0.85 - 22px)) scale(1.12); }
+            100% { transform: translate(var(--leap-x), var(--leap-y)) scale(1); }
+        }
+        @keyframes nitroFlame {
+            0%, 100% { transform: scaleY(1) scaleX(1); opacity: 0.95; }
+            50% { transform: scaleY(1.5) scaleX(0.85); opacity: 0.7; }
+        }
+        @keyframes speedLines {
+            0% { transform: translateX(60px); opacity: 0; }
+            30% { opacity: 0.9; }
+            100% { transform: translateX(-260px); opacity: 0; }
+        }
+        @keyframes meteorSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes zzzFloat {
+            0% { opacity: 0; transform: translate(0, 0) scale(0.6); }
+            30% { opacity: 1; }
+            100% { opacity: 0; transform: translate(18px, -42px) scale(1.15); }
+        }
+        @keyframes heartPop {
+            0% { transform: scale(0.3); opacity: 0; }
+            40% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.9) translateY(-30px); opacity: 0; }
+        }
+        @keyframes bubbleRise {
+            0% { transform: translateY(0) scale(0.6); opacity: 0.85; }
+            100% { transform: translateY(-130px) scale(1.15); opacity: 0; }
+        }
+        @keyframes sway {
+            0%, 100% { transform: rotate(-4deg); }
+            50% { transform: rotate(4deg); }
+        }
+        @keyframes starSpin {
+            from { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            to { transform: rotate(360deg) scale(1); }
         }
         @keyframes carRumble {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -38,138 +194,131 @@
             50% { transform: scale(1.3) translateY(14px); opacity: 0.6; }
             100% { transform: scale(2.0) translateY(28px); opacity: 0; }
         }
-        @keyframes roadStripes {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
-        }
-        @keyframes frogArc {
-            0% { transform: scale(1) translateY(0); }
-            40% { transform: scale(1.35) translateY(-24px) rotate(-8deg); }
-            70% { transform: scale(1.2) translateY(-14px) rotate(4deg); }
-            100% { transform: scale(1) translateY(0) rotate(0); }
-        }
-        /* Flowing Gold Liquid Animation */
         @keyframes goldenFlow {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
         @keyframes goldGlowPulse {
-            0%, 100% {
-                box-shadow: 0 0 8px rgba(245, 158, 11, 0.6), 0 0 16px rgba(251, 191, 36, 0.35), inset 0 0 4px rgba(251, 191, 36, 0.5);
-            }
-            50% {
-                box-shadow: 0 0 16px rgba(245, 158, 11, 0.9), 0 0 28px rgba(251, 191, 36, 0.65), inset 0 0 8px rgba(251, 191, 36, 0.8);
-            }
+            0%, 100% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.6), 0 0 16px rgba(251, 191, 36, 0.35), inset 0 0 4px rgba(251, 191, 36, 0.5); }
+            50% { box-shadow: 0 0 16px rgba(245, 158, 11, 0.9), 0 0 28px rgba(251, 191, 36, 0.65), inset 0 0 8px rgba(251, 191, 36, 0.8); }
         }
-        /* Pet 3D Distinct Interactive Animations */
-        @keyframes petChewCookie {
-            0%, 100% { transform: scale(1) rotate(0deg); }
-            20% { transform: scale(1.1, 0.92) rotate(-4deg) translateY(2px); }
-            40% { transform: scale(0.94, 1.08) rotate(4deg) translateY(-2px); }
-            60% { transform: scale(1.08, 0.94) rotate(-3deg) translateY(1px); }
-            80% { transform: scale(0.96, 1.04) rotate(2deg) translateY(-1px); }
+
+        .animate-fade-in { animation: fadeInUp .35s ease-out; }
+        .animate-float-y { animation: floatY 2.6s ease-in-out infinite; }
+        .animate-breathe { animation: breathe 3.2s ease-in-out infinite; }
+        .animate-wiggle { animation: wiggle 0.6s ease-in-out infinite; }
+        .animate-shake-screen { animation: shakeScreen .38s ease; }
+        .animate-float-score { animation: floatScore .9s ease-out forwards; }
+        .animate-pop-burst { animation: popBurst .4s ease-out forwards; }
+        .animate-twinkle { animation: twinkle 2s ease-in-out infinite; }
+        .animate-sway { animation: sway 3s ease-in-out infinite; }
+        .animate-star-spin { animation: starSpin 1.2s ease-in-out; }
+        .animate-car-rumble { animation: carRumble 0.14s infinite ease-in-out; }
+        .animate-exhaust-puff { animation: exhaustPuff 0.6s infinite ease-out; }
+        .animate-frog-leap { animation: frogLeap .55s cubic-bezier(0.3, 0.8, 0.5, 1); }
+        .animate-nitro { animation: nitroFlame 0.18s infinite ease-in-out; }
+        .animate-meteor { animation: meteorSpin 5s linear infinite; }
+        .animate-zzz { animation: zzzFloat 2.2s ease-out infinite; }
+        .animate-heart-pop { animation: heartPop .8s ease-out forwards; }
+        .animate-bubble-rise { animation: bubbleRise 1.6s ease-out infinite; }
+        .animate-confetti { animation: confettiFall 1.8s ease-in forwards; }
+
+        /* 宠物互动动作（每种道具一个独特动画） */
+        @keyframes petEatCookie {
+            0%, 100% { transform: scale(1) rotate(0); }
+            15% { transform: scale(1.06, 0.94) rotate(-3deg); }
+            35% { transform: scale(0.96, 1.05) rotate(3deg); }
+            55% { transform: scale(1.05, 0.96) rotate(-2deg); }
+            75% { transform: scale(0.98, 1.03) rotate(2deg); }
         }
         @keyframes petGulpFish {
-            0% { transform: scale(1) translateY(0); }
-            25% { transform: scale(0.85, 1.25) translateY(-28px) rotate(-8deg); }
-            55% { transform: scale(1.2, 0.85) translateY(4px) rotate(6deg); }
-            75% { transform: scale(1.08, 0.95) translateY(-8px); }
-            100% { transform: scale(1) translateY(0); }
-        }
-        @keyframes petPlumpBurger {
-            0% { transform: scale(1); }
-            30% { transform: scale(1.3, 1.22) translateY(-10px); }
-            60% { transform: scale(1.18, 1.26) translateY(-4px); }
-            85% { transform: scale(1.24, 1.16) translateY(-6px); }
-            100% { transform: scale(1) translateY(0); }
-        }
-        @keyframes petCakeSpin {
-            0% { transform: scale(1) rotate(0deg); }
-            40% { transform: scale(1.25) rotate(180deg) translateY(-16px); }
-            70% { transform: scale(1.15) rotate(360deg) translateY(-8px); }
-            100% { transform: scale(1) rotate(360deg) translateY(0); }
+            0% { transform: translateY(0) scale(1); }
+            30% { transform: translateY(-26px) scale(0.88, 1.2) rotate(-6deg); }
+            60% { transform: translateY(2px) scale(1.18, 0.86) rotate(5deg); }
+            100% { transform: translateY(0) scale(1); }
         }
         @keyframes petLickIcecream {
-            0%, 100% { transform: scale(1) rotate(0deg); }
-            20% { transform: scale(1.06) rotate(-10deg) translateY(-3px); }
-            40% { transform: scale(1.06) rotate(10deg) translateY(-3px); }
-            60% { transform: scale(1.04) rotate(-6deg) translateY(-2px); }
-            80% { transform: scale(1.04) rotate(6deg) translateY(-2px); }
+            0%, 100% { transform: rotate(0) translateY(0); }
+            25% { transform: rotate(-8deg) translateY(-6px); }
+            50% { transform: rotate(0) translateY(0); }
+            75% { transform: rotate(8deg) translateY(-6px); }
         }
-        @keyframes petFeastBurst {
-            0% { transform: scale(0.9) translateY(0); }
-            25% { transform: scale(1.35) translateY(-24px) rotate(8deg); }
-            50% { transform: scale(1.25) translateY(-12px) rotate(-8deg); }
-            75% { transform: scale(1.3) translateY(-18px) rotate(4deg); }
-            100% { transform: scale(1) translateY(0); }
+        @keyframes petDanceMusic {
+            0%, 100% { transform: translateY(0) rotate(-5deg) scale(1); }
+            25% { transform: translateY(-14px) rotate(0deg) scale(1.06); }
+            50% { transform: translateY(0) rotate(5deg) scale(1); }
+            75% { transform: translateY(-14px) rotate(0deg) scale(1.06); }
         }
-        @keyframes floatFoodParticle {
-            0% { transform: scale(0.5) translateY(0) rotate(0); opacity: 1; }
-            100% { transform: scale(1.5) translateY(-60px) rotate(45deg); opacity: 0; }
+        @keyframes petChaseBall {
+            0% { transform: translateX(-46px) rotate(0deg); }
+            50% { transform: translateX(46px) rotate(360deg); }
+            100% { transform: translateX(-46px) rotate(720deg); }
         }
-
-        .animate-car-rumble {
-            animation: carRumble 0.14s infinite ease-in-out;
+        @keyframes petBathBubbles {
+            0%, 100% { transform: translateY(0) rotate(0); }
+            25% { transform: translateY(-8px) rotate(-6deg) scale(1.03); }
+            50% { transform: translateY(0) rotate(0); }
+            75% { transform: translateY(-8px) rotate(6deg) scale(1.03); }
         }
-        .animate-exhaust-puff {
-            animation: exhaustPuff 0.6s infinite ease-out;
+        @keyframes petBrush {
+            0%, 100% { transform: rotate(0) scale(1); }
+            30% { transform: rotate(-10deg) scale(1.04) translateY(-3px); }
+            60% { transform: rotate(10deg) scale(1.04) translateY(-3px); }
         }
-        .animate-frog-arc {
-            animation: frogArc 0.45s ease-out;
+        @keyframes petSleep {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05, 0.94) translateY(6px); }
         }
-        .animate-pet-chew {
-            animation: petChewCookie 0.85s ease-in-out;
+        @keyframes petRead {
+            0%, 100% { transform: translateY(0) rotate(-2deg); }
+            50% { transform: translateY(-4px) rotate(2deg); }
         }
-        .animate-pet-gulp {
-            animation: petGulpFish 1.1s cubic-bezier(0.34, 1.56, 0.64, 1);
+        @keyframes petStretch {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.25, 0.85); }
+            70% { transform: scale(0.95, 1.12) translateY(-10px); }
+            100% { transform: scale(1); }
         }
-        .animate-pet-burger {
-            animation: petPlumpBurger 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .animate-pet-cake {
-            animation: petCakeSpin 1.1s ease-in-out;
-        }
-        .animate-pet-icecream {
-            animation: petLickIcecream 1.0s ease-in-out;
-        }
-        .animate-pet-feast {
-            animation: petFeastBurst 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .animate-food-float {
-            animation: floatFoodParticle 0.9s ease-out forwards;
+        @keyframes petSpinJoy {
+            from { transform: rotate(0) scale(1); }
+            50% { transform: rotate(180deg) scale(1.15); }
+            to { transform: rotate(360deg) scale(1); }
         }
 
-        /* Flowing Light Border around Word Pill (Zero layout shift, high legibility) */
+        .animate-pet-cookie { animation: petEatCookie 1.0s ease-in-out; }
+        .animate-pet-fish { animation: petGulpFish 1.1s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .animate-pet-icecream { animation: petLickIcecream 1.2s ease-in-out; }
+        .animate-pet-dance { animation: petDanceMusic 1.1s ease-in-out; }
+        .animate-pet-ball { animation: petChaseBall 1.6s ease-in-out; }
+        .animate-pet-bath { animation: petBathBubbles 1.4s ease-in-out; }
+        .animate-pet-brush { animation: petBrush 1.2s ease-in-out; }
+        .animate-pet-sleep { animation: petSleep 1.6s ease-in-out; }
+        .animate-pet-read { animation: petRead 1.5s ease-in-out; }
+        .animate-pet-stretch { animation: petStretch 1.2s ease-in-out; }
+        .animate-pet-spinjoy { animation: petSpinJoy 0.9s ease-in-out; }
+        .animate-pet-breathe { animation: breathe 3s ease-in-out infinite; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 故事词卡流光边框 */
         @keyframes borderFlowGlow {
-            0% {
-                box-shadow: 0 0 0 2px #f59e0b, 0 0 10px rgba(245, 158, 11, 0.75);
-            }
-            25% {
-                box-shadow: 0 0 0 2px #f97316, 0 0 12px rgba(249, 115, 22, 0.75);
-            }
-            50% {
-                box-shadow: 0 0 0 2px #eab308, 0 0 14px rgba(234, 179, 8, 0.85);
-            }
-            75% {
-                box-shadow: 0 0 0 2px #10b981, 0 0 10px rgba(16, 185, 129, 0.75);
-            }
-            100% {
-                box-shadow: 0 0 0 2px #f59e0b, 0 0 10px rgba(245, 158, 11, 0.75);
-            }
+            0% { box-shadow: 0 0 0 2px #f59e0b, 0 0 10px rgba(245, 158, 11, 0.75); }
+            25% { box-shadow: 0 0 0 2px #f97316, 0 0 12px rgba(249, 115, 22, 0.75); }
+            50% { box-shadow: 0 0 0 2px #eab308, 0 0 14px rgba(234, 179, 8, 0.85); }
+            75% { box-shadow: 0 0 0 2px #10b981, 0 0 10px rgba(16, 185, 129, 0.75); }
+            100% { box-shadow: 0 0 0 2px #f59e0b, 0 0 10px rgba(245, 158, 11, 0.75); }
         }
-
-        /* Flowing Gold Card Border */
         .flowing-gold-card {
             background: linear-gradient(90deg, #f59e0b, #fbbf24, #fef08a, #d97706, #fbbf24, #f59e0b) !important;
             background-size: 300% 300% !important;
             animation: goldenFlow 2.2s linear infinite, goldGlowPulse 1.8s ease-in-out infinite !important;
         }
-        /* Flowing Border Word Box in Story (Crisp text, zero word displacement, circulating light) */
         .flowing-gold-pill,
         .flowing-word-box {
             background-color: #ffffff !important;
-            color: #0f172a !important;
+            color: #5B4636 !important;
             font-weight: 800 !important;
             animation: borderFlowGlow 1.8s linear infinite !important;
             border-color: transparent !important;
@@ -189,10 +338,9 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body class="m-0 p-0">
     <div id="root"></div>
-<script type="module" src="/index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>
