@@ -22,6 +22,9 @@ translate-examples.cjs
 gen-example-zh.cjs
 en-example-zh.json
 
+# 账号交接档案（含密钥，仅本地保存）
+*.mc
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
