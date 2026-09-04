@@ -69,21 +69,21 @@ export interface VocabPaletteItem {
 }
 
 export const VOCAB_15_COLOR_PALETTE: VocabPaletteItem[] = [
-  { index: 1, name: '翡翠绿', pill: 'bg-emerald-100 text-emerald-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-emerald-600 text-white', bgLight: 'bg-emerald-50', borderColor: 'border-emerald-300', textColor: 'text-emerald-900', numberTag: 'bg-emerald-600 text-white' },
-  { index: 2, name: '暖阳橙', pill: 'bg-amber-100 text-amber-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-amber-600 text-white', bgLight: 'bg-amber-50', borderColor: 'border-amber-300', textColor: 'text-amber-900', numberTag: 'bg-amber-600 text-white' },
-  { index: 3, name: '晴空蓝', pill: 'bg-sky-100 text-sky-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-sky-600 text-white', bgLight: 'bg-sky-50', borderColor: 'border-sky-300', textColor: 'text-sky-900', numberTag: 'bg-sky-600 text-white' },
-  { index: 4, name: '珊瑚粉', pill: 'bg-rose-100 text-rose-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-rose-600 text-white', bgLight: 'bg-rose-50', borderColor: 'border-rose-300', textColor: 'text-rose-900', numberTag: 'bg-rose-600 text-white' },
-  { index: 5, name: '梦幻紫', pill: 'bg-purple-100 text-purple-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-purple-600 text-white', bgLight: 'bg-purple-50', borderColor: 'border-purple-300', textColor: 'text-purple-900', numberTag: 'bg-purple-600 text-white' },
-  { index: 6, name: '海洋青', pill: 'bg-teal-100 text-teal-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-teal-600 text-white', bgLight: 'bg-teal-50', borderColor: 'border-teal-300', textColor: 'text-teal-900', numberTag: 'bg-teal-600 text-white' },
-  { index: 7, name: '蜜桔橘', pill: 'bg-orange-100 text-orange-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-orange-600 text-white', bgLight: 'bg-orange-50', borderColor: 'border-orange-300', textColor: 'text-orange-900', numberTag: 'bg-orange-600 text-white' },
-  { index: 8, name: '星空蓝', pill: 'bg-indigo-100 text-indigo-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-indigo-600 text-white', bgLight: 'bg-indigo-50', borderColor: 'border-indigo-300', textColor: 'text-indigo-900', numberTag: 'bg-indigo-600 text-white' },
-  { index: 9, name: '樱花粉', pill: 'bg-pink-100 text-pink-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-pink-600 text-white', bgLight: 'bg-pink-50', borderColor: 'border-pink-300', textColor: 'text-pink-900', numberTag: 'bg-pink-600 text-white' },
-  { index: 10, name: '嫩芽绿', pill: 'bg-lime-100 text-lime-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-lime-600 text-white', bgLight: 'bg-lime-50', borderColor: 'border-lime-300', textColor: 'text-lime-900', numberTag: 'bg-lime-600 text-white' },
-  { index: 11, name: '薄荷蓝', pill: 'bg-cyan-100 text-cyan-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-cyan-600 text-white', bgLight: 'bg-cyan-50', borderColor: 'border-cyan-300', textColor: 'text-cyan-900', numberTag: 'bg-cyan-600 text-white' },
-  { index: 12, name: '柠檬黄', pill: 'bg-yellow-100 text-yellow-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-yellow-600 text-white', bgLight: 'bg-yellow-50', borderColor: 'border-yellow-300', textColor: 'text-yellow-900', numberTag: 'bg-yellow-600 text-white' },
-  { index: 13, name: '热情红', pill: 'bg-red-100 text-red-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-red-600 text-white', bgLight: 'bg-red-50', borderColor: 'border-red-300', textColor: 'text-red-900', numberTag: 'bg-red-600 text-white' },
-  { index: 14, name: '宝石蓝', pill: 'bg-blue-100 text-blue-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-blue-600 text-white', bgLight: 'bg-blue-50', borderColor: 'border-blue-300', textColor: 'text-blue-900', numberTag: 'bg-blue-600 text-white' },
-  { index: 15, name: '葡萄紫', pill: 'bg-fuchsia-100 text-fuchsia-950 font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-fuchsia-600 text-white', bgLight: 'bg-fuchsia-50', borderColor: 'border-fuchsia-300', textColor: 'text-fuchsia-900', numberTag: 'bg-fuchsia-600 text-white' }
+  { index: 1, name: '嫩芽绿', pill: 'bg-[#E5F6EC] text-[#357F43] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#6BCB77] text-white', bgLight: 'bg-[#E5F6EC]', borderColor: 'border-[#C8EED4]', textColor: 'text-[#357F43]', numberTag: 'bg-[#6BCB77] text-white' },
+  { index: 2, name: '暖阳橙', pill: 'bg-[#FFE9E0] text-[#E0633A] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#FF8A5C] text-white', bgLight: 'bg-[#FFE9E0]', borderColor: 'border-[#FFD1BE]', textColor: 'text-[#E0633A]', numberTag: 'bg-[#FF8A5C] text-white' },
+  { index: 3, name: '晴空蓝', pill: 'bg-[#E3F2FA] text-[#2E93C4] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#4FB8E7] text-white', bgLight: 'bg-[#E3F2FA]', borderColor: 'border-[#BBE2F2]', textColor: 'text-[#2E93C4]', numberTag: 'bg-[#4FB8E7] text-white' },
+  { index: 4, name: '草莓粉', pill: 'bg-[#FFE9F0] text-[#D14D72] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#FF8FAB] text-white', bgLight: 'bg-[#FFE9F0]', borderColor: 'border-[#FFD3E0]', textColor: 'text-[#D14D72]', numberTag: 'bg-[#FF8FAB] text-white' },
+  { index: 5, name: '梦幻紫', pill: 'bg-[#F3E9FA] text-[#8258C7] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#A57DE0] text-white', bgLight: 'bg-[#F3E9FA]', borderColor: 'border-[#E2D0F2]', textColor: 'text-[#8258C7]', numberTag: 'bg-[#A57DE0] text-white' },
+  { index: 6, name: '薄荷青', pill: 'bg-[#E2F7F3] text-[#2A9D8C] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#5FD0C8] text-white', bgLight: 'bg-[#E2F7F3]', borderColor: 'border-[#C4EBE5]', textColor: 'text-[#2A9D8C]', numberTag: 'bg-[#5FD0C8] text-white' },
+  { index: 7, name: '蜜桔橘', pill: 'bg-[#FFEFE3] text-[#D97B29] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#FFA94D] text-white', bgLight: 'bg-[#FFEFE3]', borderColor: 'border-[#FFD9AE]', textColor: 'text-[#D97B29]', numberTag: 'bg-[#FFA94D] text-white' },
+  { index: 8, name: '星光蓝', pill: 'bg-[#E8EEFF] text-[#4A6FE3] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#7C9AF5] text-white', bgLight: 'bg-[#E8EEFF]', borderColor: 'border-[#D3DEFF]', textColor: 'text-[#4A6FE3]', numberTag: 'bg-[#7C9AF5] text-white' },
+  { index: 9, name: '樱花粉', pill: 'bg-[#FFEDF3] text-[#E0559B] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#FF9ECB] text-white', bgLight: 'bg-[#FFEDF3]', borderColor: 'border-[#FFD4E8]', textColor: 'text-[#E0559B]', numberTag: 'bg-[#FF9ECB] text-white' },
+  { index: 10, name: '柠檬黄', pill: 'bg-[#FFF8DE] text-[#A98A00] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#FFE066] text-[#7A4A00]', bgLight: 'bg-[#FFF8DE]', borderColor: 'border-[#FFEFB0]', textColor: 'text-[#A98A00]', numberTag: 'bg-[#FFE066] text-[#7A4A00]' },
+  { index: 11, name: '湖水青', pill: 'bg-[#E0F4F7] text-[#1D8A9E] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#4DC3D9] text-white', bgLight: 'bg-[#E0F4F7]', borderColor: 'border-[#BEE7EE]', textColor: 'text-[#1D8A9E]', numberTag: 'bg-[#4DC3D9] text-white' },
+  { index: 12, name: '栗子棕', pill: 'bg-[#F5EDE6] text-[#8B5E3C] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#B08968] text-white', bgLight: 'bg-[#F5EDE6]', borderColor: 'border-[#E5D5C5]', textColor: 'text-[#8B5E3C]', numberTag: 'bg-[#B08968] text-white' },
+  { index: 13, name: '西瓜红', pill: 'bg-[#FFE8E8] text-[#D64545] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#FF7B7B] text-white', bgLight: 'bg-[#FFE8E8]', borderColor: 'border-[#FFD1D1]', textColor: 'text-[#D64545]', numberTag: 'bg-[#FF7B7B] text-white' },
+  { index: 14, name: '葡萄紫', pill: 'bg-[#F3E8FA] text-[#8E44AD] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#B678E0] text-white', bgLight: 'bg-[#F3E8FA]', borderColor: 'border-[#E4CEF5]', textColor: 'text-[#8E44AD]', numberTag: 'bg-[#B678E0] text-white' },
+  { index: 15, name: '青柠绿', pill: 'bg-[#F0F9E2] text-[#6B8E23] font-bold px-1 py-0 rounded mx-0.5 inline leading-tight align-baseline shadow-2xs', badge: 'bg-[#9CCB3B] text-white', bgLight: 'bg-[#F0F9E2]', borderColor: 'border-[#DDEEC2]', textColor: 'text-[#6B8E23]', numberTag: 'bg-[#9CCB3B] text-white' }
 ];
 
 export const getPaletteByIndex = (idx: number): VocabPaletteItem => {
@@ -109,20 +109,28 @@ const getAudioContext = (): AudioContext | null => {
   return sharedAudioCtx;
 };
 
-export type SoundEffectType = 
-  | 'click' 
-  | 'correct' 
-  | 'error' 
-  | 'combo' 
-  | 'victory' 
-  | 'frog_jump' 
-  | 'frog_splash' 
-  | 'mole_hit' 
-  | 'car_engine' 
+export type SoundEffectType =
+  | 'click'
+  | 'correct'
+  | 'error'
+  | 'combo'
+  | 'victory'
+  | 'frog_jump'
+  | 'frog_splash'
+  | 'mole_hit'
+  | 'car_engine'
   | 'car_horn'
   | 'coin'
   | 'laser'
-  | 'pop';
+  | 'pop'
+  | 'splash'
+  | 'whoosh'
+  | 'bubble'
+  | 'sparkle'
+  | 'bell'
+  | 'wind'
+  | 'cat_happy'   // 开心喵喵笑（两声上扬）
+  | 'cat_sad';     // 可怜喵叫（一声下降）
 
 export const playSoundEffect = (type: SoundEffectType, volume: number = 0.25) => {
   try {
@@ -144,6 +152,63 @@ export const playSoundEffect = (type: SoundEffectType, volume: number = 0.25) =>
       osc.connect(gain);
       osc.start(now);
       osc.stop(now + 0.035);
+    } else if (type === 'cat_happy') {
+      // 开心喵喵：两声短促上扬的"喵喵！"（模拟猫叫的 m→iao 滑音）
+      const meow = (start: number, base: number, dur: number, vol: number) => {
+        const osc = ctx.createOscillator();
+        osc.type = 'sawtooth';
+        // "m"低起→"ia"上扬→"o"收尾的频率曲线
+        osc.frequency.setValueAtTime(base * 0.75, start);
+        osc.frequency.linearRampToValueAtTime(base * 1.25, start + dur * 0.35);
+        osc.frequency.linearRampToValueAtTime(base * 1.05, start + dur);
+        // 加颤音让声音更像猫
+        const vib = ctx.createOscillator();
+        const vibGain = ctx.createGain();
+        vib.frequency.value = 22;
+        vibGain.gain.value = base * 0.06;
+        vib.connect(vibGain);
+        vibGain.connect(osc.frequency);
+        // 低通滤波柔化锯齿波毛刺
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.value = 2200;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, start);
+        g.gain.exponentialRampToValueAtTime(vol, start + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+        osc.connect(lp);
+        lp.connect(g);
+        g.connect(ctx.destination);
+        osc.start(start); osc.stop(start + dur + 0.02);
+        vib.start(start); vib.stop(start + dur + 0.02);
+      };
+      meow(now, 620, 0.20, volume * 0.55);            // 第一声"喵"
+      meow(now + 0.24, 760, 0.18, volume * 0.5);      // 第二声更高的"喵!"
+    } else if (type === 'cat_sad') {
+      // 可怜喵：一声长而缓慢下降的"喵…"，带微颤
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(680, now);
+      osc.frequency.linearRampToValueAtTime(560, now + 0.25);
+      osc.frequency.linearRampToValueAtTime(330, now + 0.55);
+      const vib = ctx.createOscillator();
+      const vibGain = ctx.createGain();
+      vib.frequency.value = 14;
+      vibGain.gain.value = 28;
+      vib.connect(vibGain);
+      vibGain.connect(osc.frequency);
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 1500;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(volume * 0.5, now + 0.06);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      osc.connect(lp);
+      lp.connect(g);
+      g.connect(ctx.destination);
+      osc.start(now); osc.stop(now + 0.62);
+      vib.start(now); vib.stop(now + 0.62);
     } else if (type === 'car_horn') {
       // Cheerful friendly car honk beep-beep
       const osc1 = ctx.createOscillator();
@@ -300,6 +365,107 @@ export const playSoundEffect = (type: SoundEffectType, volume: number = 0.25) =>
         osc.start(now + i * 0.1);
         osc.stop(now + i * 0.1 + (i === 3 ? 0.65 : 0.28));
       });
+    } else if (type === 'splash') {
+      // Water splash: filtered noise burst with downward sweep
+      const bufferSize = 0.25 * ctx.sampleRate;
+      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+      }
+      const noiseSrc = ctx.createBufferSource();
+      noiseSrc.buffer = noiseBuffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1600, now);
+      filter.frequency.exponentialRampToValueAtTime(300, now + 0.22);
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(volume * 0.6, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      noiseSrc.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      noiseSrc.start(now);
+      noiseSrc.stop(now + 0.25);
+    } else if (type === 'whoosh') {
+      // Movement whoosh: rapid frequency sweep
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.exponentialRampToValueAtTime(900, now + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(200, now + 0.2);
+      gain.gain.setValueAtTime(volume * 0.4, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      osc.connect(gain);
+      osc.start(now);
+      osc.stop(now + 0.24);
+    } else if (type === 'bubble') {
+      // Fish bubble: wobbly pop
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(700, now + 0.05);
+      osc.frequency.exponentialRampToValueAtTime(450, now + 0.1);
+      gain.gain.setValueAtTime(volume * 0.5, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.connect(gain);
+      osc.start(now);
+      osc.stop(now + 0.13);
+    } else if (type === 'sparkle') {
+      // Magic sparkle: quick high arpeggio
+      const freqs = [1318.51, 1567.98, 2093.0, 2637.0];
+      freqs.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const noteGain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + i * 0.03);
+        noteGain.gain.setValueAtTime(volume * 0.35, now + i * 0.03);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.03 + 0.15);
+        osc.connect(noteGain);
+        noteGain.connect(ctx.destination);
+        osc.start(now + i * 0.03);
+        osc.stop(now + i * 0.03 + 0.16);
+      });
+    } else if (type === 'bell') {
+      // Temple bell for milestones: rich harmonic with long decay
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      osc1.type = 'sine';
+      osc2.type = 'sine';
+      osc1.frequency.setValueAtTime(660, now);
+      osc2.frequency.setValueAtTime(990, now);
+      gain.gain.setValueAtTime(volume * 0.5, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+      osc1.connect(gain);
+      osc2.connect(gain);
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 1.0);
+      osc2.stop(now + 1.0);
+    } else if (type === 'wind') {
+      // Mountain wind: gentle noise swell
+      const bufferSize = 0.6 * ctx.sampleRate;
+      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      const noiseSrc = ctx.createBufferSource();
+      noiseSrc.buffer = noiseBuffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(400, now);
+      filter.frequency.linearRampToValueAtTime(1200, now + 0.3);
+      filter.frequency.linearRampToValueAtTime(300, now + 0.55);
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.001, now);
+      noiseGain.gain.linearRampToValueAtTime(volume * 0.3, now + 0.25);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      noiseSrc.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      noiseSrc.start(now);
+      noiseSrc.stop(now + 0.6);
     }
   } catch (err) {
     // AudioContext autoplay restrictions or error fallback
@@ -307,13 +473,172 @@ export const playSoundEffect = (type: SoundEffectType, volume: number = 0.25) =>
 };
 
 /**
- * Simple English Syllable Splitter (Heuristic-based)
+ * English Syllable Splitter (Rule-based, v2)
+ *
+ * 规则引擎（经全词库 573 词人工审计）：
+ * 1. 后缀：音节-le（ta/ble、lit/tle、ap/ple）、-es/-ed 何时独立成块（watch/es、want/ed）
+ *    与何时静音（names、liked、cake、horse 的魔法 e）
+ * 2. 元音组内拆分：io/ia 各自成音节（li/on、pi/an/o），tion/sion 保持整体；
+ *    元音间的 y 拆分（cray/on、play/er）；uie 特例（qui/et）
+ * 3. 辅音簇：单个辅音归后一音节（wa/ter，用户指定兜底规则）；
+ *    ck/ch 闭合前一音节（chick/en、teach/er）；th/sh/ph/wh/gh/qu 归后（mo/ther）；
+ *    3+ 辅音簇优先把"合法音节起首组合"留给后一音节（mon/ster、grand/pa、
+ *    bath/room、post/card），簇首二合字母闭合前一音节（black/board、eigh/teen）
+ * 4. 常见不规则词（按拼写切分）走 OVERRIDE 词表
+ * 5. 空格/连字符保留为独立块，支持短语（pencil box、hard-working）
  */
+
+// 常见不规则词的标准切分（全部按原拼写切，拼接后与原词完全一致）
+const SYLLABLE_OVERRIDE: Record<string, string[]> = {
+  'seven': ['sev', 'en'], 'eleven': ['e', 'lev', 'en'],
+  'seventeen': ['sev', 'en', 'teen'],
+  'family': ['fam', 'i', 'ly'], 'animal': ['an', 'i', 'mal'],
+  'elephant': ['el', 'e', 'phant'], 'vegetable': ['veg', 'e', 'ta', 'ble'],
+  'birthday': ['birth', 'day'], 'river': ['riv', 'er'],
+  'study': ['stud', 'y'], 'money': ['mon', 'ey'],
+  'evening': ['eve', 'ning'], 'everyone': ['ev', 'ery', 'one'],
+  'notebook': ['note', 'book'], 'homework': ['home', 'work'],
+  'sometimes': ['some', 'times'],
+  'body': ['bod', 'y'], 'panda': ['pan', 'da'], 'taxi': ['tax', 'i'],
+  'shadow': ['shad', 'ow'], 'cinema': ['cin', 'e', 'ma'], 'comic': ['com', 'ic'],
+  'second': ['sec', 'ond'], 'museum': ['mu', 'se', 'um'],
+  'usually': ['u', 'su', 'al', 'ly'], 'very': ['ver', 'y'], 'many': ['man', 'y'],
+  'idea': ['i', 'de', 'a'], 'poem': ['po', 'em'], 'science': ['sci', 'ence'],
+  'heavier': ['heav', 'i', 'er'], 'healthy': ['health', 'y'], 'helpful': ['help', 'ful'],
+  'hiking': ['hik', 'ing'], 'living': ['liv', 'ing'],
+  'rainy': ['rain', 'y'], 'cloudy': ['cloud', 'y'], 'snowy': ['snow', 'y'],
+  'playground': ['play', 'ground'], 'classmate': ['class', 'mate'],
+  'businessman': ['busi', 'ness', 'man'], 'dictionary': ['dic', 'tion', 'ar', 'y'],
+  'kitchen': ['kitch', 'en'], 'climbing': ['climb', 'ing'],
+};
+
+// 可以作为音节起首的辅音组合
+const ONSET_CLUSTERS = [
+  'bl', 'br', 'ch', 'cl', 'cr', 'dr', 'fl', 'fr', 'gl', 'gr', 'pl', 'pr',
+  'sc', 'sk', 'sl', 'sm', 'sn', 'sp', 'st', 'sw', 'th', 'tr', 'tw', 'wh',
+  'ph', 'sh', 'wr', 'qu', 'kn',
+  'scr', 'shr', 'spl', 'spr', 'str', 'squ', 'thr',
+];
+
+// 辅音簇末尾最长的"合法音节起首"后缀的起始下标；找不到返回 -1
+const longestOnsetSuffix = (c: string): number => {
+  for (const len of [3, 2]) {
+    if (c.length >= len + 1 && ONSET_CLUSTERS.includes(c.slice(c.length - len))) {
+      return c.length - len;
+    }
+  }
+  if (c.length >= 2) return c.length - 1; // 单个辅音总能做音节起首
+  return -1;
+};
+
+const isVowelChar = (ch: string, idx: number): boolean =>
+  'aeiou'.includes(ch) || (ch === 'y' && idx > 0);
+
+const splitSingleWord = (word: string): string[] => {
+  const lower = word.toLowerCase();
+  if (word.length <= 3) return [word];
+  if (SYLLABLE_OVERRIDE[lower]) return SYLLABLE_OVERRIDE[lower];
+  if (/[^a-z]/.test(lower)) return [word]; // 缩写/撇号词整体返回（i'm、let's、TV）
+  const chars = lower.split('');
+  const n = chars.length;
+  const silent = new Array<boolean>(n).fill(false);
+
+  // ---------- 后缀处理 ----------
+  if (lower.endsWith('es')) {
+    const stem = lower.slice(0, -2);
+    const b1 = stem.slice(-1), b2 = stem.slice(-2);
+    if (b1 === 's' || b1 === 'x' || b1 === 'z' || b2 === 'ch' || b2 === 'sh') {
+      return [...splitSingleWord(stem), word.slice(-2)]; // 读 /ɪs/ 的 -es
+    }
+    silent[n - 2] = true; // 静音 e（names、grapes）
+  } else if (lower.endsWith('ed')) {
+    const b1 = lower.slice(0, -2).slice(-1);
+    if (b1 === 't' || b1 === 'd') {
+      return [...splitSingleWord(lower.slice(0, -2)), word.slice(-2)]; // 读 /ɪd/ 的 -ed
+    }
+    silent[n - 2] = true; // 静音（played、liked、jumped）
+  } else if (chars[n - 1] === 'e') {
+    const c1 = chars[n - 2], c2 = chars[n - 3];
+    if (c1 === 'l' && c2 && !isVowelChar(c2, n - 3)) {
+      return [...splitSingleWord(lower.slice(0, -3)), word.slice(-3)]; // 音节 le
+    }
+    if (c1 && !isVowelChar(c1, n - 2)) {
+      silent[n - 1] = true; // 魔法 e（cake、horse、these）
+    }
+  }
+
+  // ---------- 元音组（含组内拆分） ----------
+  const isV = (i: number): boolean =>
+    i >= 0 && i < n && isVowelChar(chars[i], i) && !silent[i];
+  const groups: Array<[number, number]> = [];
+  let i = 0;
+  while (i < n) {
+    if (isV(i)) {
+      let j = i;
+      while (isV(j + 1)) j++;
+      if (i === j) {
+        groups.push([i, j]);
+      } else {
+        let start = i;
+        for (let k = i; k < j; k++) {
+          let cut = false;
+          if (chars[k] === 'i' && (chars[k + 1] === 'o' || chars[k + 1] === 'a')
+            && chars[k - 1] !== 't' && chars[k - 1] !== 's') cut = true; // io/ia（tion/sion 除外）
+          if (chars[k] === 'y' && k > i && k < j) cut = true; // 元音间的 y（crayon、player）
+          if (lower.slice(i, j + 1) === 'uie' && chars[k] === 'i') cut = true; // quiet
+          if (cut) { groups.push([start, k]); start = k + 1; }
+        }
+        groups.push([start, j]);
+      }
+      i = j + 1;
+    } else i++;
+  }
+  if (groups.length <= 1) return [word];
+
+  // ---------- 辅音簇切分 ----------
+  const cuts = new Set<number>();
+  for (let g = 0; g < groups.length - 1; g++) {
+    const [, e1] = groups[g];
+    const [s2] = groups[g + 1];
+    const cs = e1 + 1, ce = s2 - 1;
+    const len = ce - cs + 1;
+    if (len <= 0) { cuts.add(s2); continue; }        // 元音相邻
+    if (len === 1) { cuts.add(cs); continue; }       // 单辅音归后（开音节）
+    const c = chars.slice(cs, ce + 1).join('');
+    if (len === 2) {
+      if (c === 'ck' || c === 'ch') cuts.add(cs + 2); // 闭合前一音节（chicken、pocket、teacher）
+      else if (['th', 'sh', 'ph', 'wh', 'gh', 'qu'].includes(c)) cuts.add(cs); // 归后（mother）
+      else cuts.add(cs + 1);                          // 中间切（rabbit、window、sister）
+    } else {
+      const head2 = c.slice(0, 2);
+      if (['ck', 'ch', 'th', 'sh', 'ph', 'wh', 'gh'].includes(head2)) {
+        cuts.add(cs + 2); // 簇首二合字母闭合前一音节（blackboard、bathroom、eighteen）
+      } else {
+        const on = longestOnsetSuffix(c);
+        cuts.add(on >= 0 ? cs + on : cs + 1); // monster、grandpa、postcard、friendly
+      }
+    }
+  }
+
+  // ---------- 应用切分（保留原大小写） ----------
+  const sorted = [...cuts].sort((a, b) => a - b);
+  const out: string[] = [];
+  let prev = 0;
+  for (const c of sorted) { out.push(word.slice(prev, c)); prev = c; }
+  out.push(word.slice(prev));
+  return out.filter(s => s);
+};
+
 export const splitSyllables = (word: string): string[] => {
-  if (!word || word.length <= 3) return [word];
-  const syllableRegex = /[^aeiouy]*[aeiouy]+(?:[^aeiouy](?![aeiouy]))*/gi;
-  const result = word.match(syllableRegex);
-  return result && result.length > 0 ? result : [word];
+  if (!word) return [word];
+  // 空格/连字符保留为独立块，支持多词短语与复合词
+  const tokens = word.split(/([\s-]+)/).filter(t => t.length > 0);
+  const out: string[] = [];
+  for (const t of tokens) {
+    if (/^[\s-]+$/.test(t)) { out.push(t.includes(' ') ? ' ' : t); continue; }
+    out.push(...splitSingleWord(t));
+  }
+  return out.length ? out : [word];
 };
 
 /**
@@ -428,6 +753,136 @@ export const getVoiceForLang = (lang: string): SpeechSynthesisVoice | null => {
   return matched[0] || voices[0] || null;
 };
 
+// ============================================================
+// Edge 神经语音层（通过 Vite 本地服务 /api/tts，免费无密钥）
+// 音色与 Edge 浏览器"大声朗读"同源（微软 Azure 神经音色）：
+//   粤语曉曼 / 普通话晓晓 / 英语 Aria —— 全部真人级自然音质
+// 优先使用；服务不可用时自动回退浏览器 speechSynthesis
+// ============================================================
+
+const EDGE_VOICES: Record<string, string> = {
+  'zh-HK': 'zh-HK-HiuMaanNeural',   // 粤语 · 曉曼（自然亲切）
+  'zh-CN': 'zh-CN-XiaoxiaoNeural',  // 普通话 · 晓晓（温柔清晰）
+  'en-US': 'en-US-AriaNeural'       // 英语 · Aria（明亮标准）
+};
+
+// 儿童友好基础语速（百分比，负数放慢）
+const EDGE_BASE_RATES: Record<string, number> = {
+  'zh-HK': -4,
+  'zh-CN': -6,
+  'en-US': -12
+};
+
+let edgeTtsFailCount = 0;
+let edgeTtsDead = false;            // 连续失败后停用，直接走浏览器TTS
+let currentEdgeAudio: HTMLAudioElement | null = null;
+let currentEdgeStop: (() => void) | null = null;
+let isPraiseSpeaking = false;        // 夸奖语音播放锁
+const edgeAudioCache = new Map<string, string>();  // key → blobURL
+
+/** 统一打断：立即停止所有正在进行的朗读（Edge 音频 + 浏览器 TTS） */
+export const stopAllSpeech = () => {
+  // 打断 Edge 神经语音播放
+  if (currentEdgeAudio) {
+    try { currentEdgeAudio.pause(); currentEdgeAudio.currentTime = 0; } catch { /* ignore */ }
+    currentEdgeAudio = null;
+  }
+  if (currentEdgeStop) {
+    try { currentEdgeStop(); } catch { /* ignore */ }
+    currentEdgeStop = null;
+  }
+  // 打断浏览器 speechSynthesis 队列
+  try {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  } catch { /* ignore */ }
+  isPraiseSpeaking = false;
+};
+
+const markEdgeResult = (ok: boolean) => {
+  if (ok) { edgeTtsFailCount = 0; return; }
+  edgeTtsFailCount++;
+  if (edgeTtsFailCount >= 3) edgeTtsDead = true;
+};
+
+/** Edge 神经语音朗读：返回是否成功（失败时由调用方回退浏览器TTS） */
+export const edgeTtsSpeak = (
+  text: string,
+  lang: 'zh-CN' | 'en-US' | 'zh-HK',
+  opts?: { rate?: number; voice?: string; onFinish?: () => void }
+): Promise<boolean> => {
+  if (edgeTtsDead || !text) return Promise.resolve(false);
+  const voice = opts?.voice || EDGE_VOICES[lang] || EDGE_VOICES['zh-CN'];
+  const rate = opts?.rate ?? EDGE_BASE_RATES[lang] ?? 0;
+  const key = `${voice}|${rate}|${text}`;
+
+  return (async (): Promise<boolean> => {
+    try {
+      // 缓存命中则直接播放（预取保证打字练习零延迟）
+      let url = edgeAudioCache.get(key);
+      if (!url) {
+        const resp = await fetch(`/api/tts?voice=${voice}&rate=${rate}&text=${encodeURIComponent(text)}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const blob = await resp.blob();
+        if (blob.size < 200) throw new Error('empty audio');
+        url = URL.createObjectURL(blob);
+        // 缓存上限控制（FIFO 淘汰）
+        if (edgeAudioCache.size > 150) {
+          const firstKey = edgeAudioCache.keys().next().value;
+          if (firstKey !== undefined) {
+            const old = edgeAudioCache.get(firstKey);
+            if (old) URL.revokeObjectURL(old);
+            edgeAudioCache.delete(firstKey);
+          }
+        }
+        edgeAudioCache.set(key, url);
+      }
+
+      // 打断上一段
+      if (currentEdgeAudio) { currentEdgeAudio.pause(); currentEdgeStop?.(); }
+      currentEdgeAudio = null; currentEdgeStop = null;
+
+      const audio = new Audio(url);
+      currentEdgeAudio = audio;
+      await new Promise<void>((resolve) => {
+        currentEdgeStop = () => resolve();
+        audio.onended = () => resolve();
+        audio.onerror = () => resolve();
+        audio.play().catch(() => resolve());
+      });
+      currentEdgeAudio = null; currentEdgeStop = null;
+      markEdgeResult(true);
+      opts?.onFinish?.();
+      return true;
+    } catch {
+      markEdgeResult(false);
+      return false;
+    }
+  })();
+};
+
+/** 预取音频到缓存（不播放）：让下一个词的朗读零延迟 */
+const prefetchEdgeTts = (text: string, lang: 'zh-CN' | 'en-US' | 'zh-HK') => {
+  if (edgeTtsDead || !text) return;
+  const voice = EDGE_VOICES[lang] || EDGE_VOICES['zh-CN'];
+  const rate = EDGE_BASE_RATES[lang] ?? 0;
+  const key = `${voice}|${rate}|${text}`;
+  if (edgeAudioCache.has(key)) return;
+  fetch(`/api/tts?voice=${voice}&rate=${rate}&text=${encodeURIComponent(text)}`)
+    .then(async resp => {
+      if (!resp.ok) return;
+      const blob = await resp.blob();
+      if (blob.size < 200) return;
+      if (edgeAudioCache.size > 150) {
+        const firstKey = edgeAudioCache.keys().next().value;
+        if (firstKey !== undefined) edgeAudioCache.delete(firstKey);
+      }
+      edgeAudioCache.set(key, URL.createObjectURL(blob));
+    })
+    .catch(() => { /* 静默，预取失败不影响功能 */ });
+};
+
 // Pre-warmed cache for current exercise item to remove latency
 interface PrewarmedAudio {
   wordText: string;
@@ -447,6 +902,10 @@ export const prewarmSpeech = (
   exampleText: string,
   lang: 'zh-CN' | 'en-US' | 'zh-HK' = 'zh-CN'
 ) => {
+  // 预取 Edge 神经音频到缓存（主路径零延迟），同时保留浏览器预构建（回退路径）
+  prefetchEdgeTts(wordText, lang);
+  prefetchEdgeTts(exampleText, lang);
+
   if (typeof window === 'undefined' || !window.speechSynthesis) return;
 
   try {
@@ -628,38 +1087,54 @@ export const toCantoneseColloquial = (text: string): string => {
   return converted;
 };
 
-let isPraiseSpeaking = false;
-
 /**
  * Speak immediately (for word preview upon index change)
  * Does NOT cancel if praise encouragement is currently playing!
  */
-export const speakDirect = (text: string, lang: 'zh-CN' | 'en-US' | 'zh-HK' = 'zh-CN', forceCancel: boolean = false) => {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return;
-  try {
-    // If praise voice is actively speaking, let it finish naturally without interrupting!
-    if (isPraiseSpeaking && !forceCancel) {
-      return;
-    }
-    if (forceCancel) {
-      isPraiseSpeaking = false;
-      window.speechSynthesis.cancel();
-    }
-
-    // If Cantonese requested, apply colloquial conversion so it sounds lively and authentic!
-    const spokenText = lang === 'zh-HK' ? toCantoneseColloquial(text) : text;
-
-    const utterance = new SpeechSynthesisUtterance(spokenText);
-    utterance.lang = lang;
-    // Optimal human prosody and melodic continuity
-    utterance.rate = lang === 'en-US' ? 0.88 : (lang === 'zh-HK' ? 0.98 : 0.95);
-    utterance.pitch = 1.0; // 1.0 preserves natural human tone contours and prevents robotic stutter
-    const voice = getVoiceForLang(lang);
-    if (voice) utterance.voice = voice;
-    window.speechSynthesis.speak(utterance);
-  } catch (e) {
-    console.warn('TTS error:', e);
+export const speakDirect = (
+  text: string,
+  lang: 'zh-CN' | 'en-US' | 'zh-HK' = 'zh-CN',
+  forceCancel: boolean = false,
+  opts?: { slow?: boolean }   // slow: 语速再减慢15%（英文长故事朗读用）
+) => {
+  if (typeof window === 'undefined') return;
+  // 夸奖语音播报中且非强制打断：让夸奖说完
+  if (isPraiseSpeaking && !forceCancel) {
+    return;
   }
+  // 每次新朗读前先打断上一段（切换语音/点句/点按钮都从这里进，保证即点即断）
+  stopAllSpeech();
+
+  // If Cantonese requested:已是地道粤语（含粤语口语字）则直接朗读，否则做普通话→粤语口语转换
+  const isAlreadyCantonese = /係|喺|嘅|咗|唔|佢|哋|畀|嘢|嚟|睇|喇|喎|吖/.test(text);
+  const spokenText = (lang === 'zh-HK' && !isAlreadyCantonese) ? toCantoneseColloquial(text) : text;
+
+  // 优先 Edge 神经音色（晓晓/Aria/曉曼），失败回退浏览器
+  // slow：语速整体 ×0.85（Edge rate 按速度百分比换算，浏览器按 rate 乘法）
+  const edgeBase = EDGE_BASE_RATES[lang] ?? 0;
+  const edgeRate = opts?.slow ? Math.round(((1 + edgeBase / 100) * 0.85 - 1) * 100) : edgeBase;
+  edgeTtsSpeak(spokenText, lang, { rate: edgeRate }).then((ok) => {
+    if (ok) return;
+    if (!window.speechSynthesis) return;
+    try {
+      if (forceCancel) {
+        isPraiseSpeaking = false;
+        window.speechSynthesis.cancel();
+      }
+
+      const utterance = new SpeechSynthesisUtterance(spokenText);
+      utterance.lang = lang;
+      // Optimal human prosody and melodic continuity
+      const baseRate = lang === 'en-US' ? 0.88 : (lang === 'zh-HK' ? 0.98 : 0.95);
+      utterance.rate = opts?.slow ? baseRate * 0.85 : baseRate;
+      utterance.pitch = 1.0; // 1.0 preserves natural human tone contours and prevents robotic stutter
+      const voice = getVoiceForLang(lang);
+      if (voice) utterance.voice = voice;
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('TTS error:', e);
+    }
+  });
 };
 
 /**
@@ -670,33 +1145,44 @@ export const playPraiseVoice = (
   praiseDialect: 'cantonese' | 'mandarin' | 'english' = 'cantonese',
   onFinish?: () => void
 ) => {
-  if (typeof window === 'undefined' || !window.speechSynthesis) {
-    onFinish?.();
-    return;
-  }
-  try {
-    const praise = getRandomPraise(praiseDialect);
-    const praiseUtterance = new SpeechSynthesisUtterance(praise.text);
-    praiseUtterance.lang = praise.lang;
-    // Human-like energetic praise speed and natural pitch
-    praiseUtterance.rate = praise.lang === 'zh-HK' ? 1.0 : 0.98;
-    praiseUtterance.pitch = 1.02; // natural emotional lift without chipmunk effect
-    const voice = getVoiceForLang(praise.lang);
-    if (voice) praiseUtterance.voice = voice;
-    
-    isPraiseSpeaking = true;
-    const cleanup = () => {
-      isPraiseSpeaking = false;
-      onFinish?.();
-    };
-    praiseUtterance.onend = cleanup;
-    praiseUtterance.onerror = cleanup;
-    
-    window.speechSynthesis.speak(praiseUtterance);
-  } catch (e) {
+  const praise = getRandomPraise(praiseDialect);
+
+  isPraiseSpeaking = true;
+  const cleanup = () => {
     isPraiseSpeaking = false;
     onFinish?.();
-  }
+  };
+
+  // 优先 Edge 神经音色（英语夸奖用 Ana 童声，更活泼），失败回退浏览器
+  edgeTtsSpeak(praise.text, praise.lang, {
+    rate: 4,
+    voice: praise.lang === 'en-US' ? 'en-US-AnaNeural' : undefined,
+    onFinish: cleanup
+  }).then((ok) => {
+    if (ok) return;
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
+      onFinish?.();
+      return;
+    }
+
+    try {
+      const praiseUtterance = new SpeechSynthesisUtterance(praise.text);
+      praiseUtterance.lang = praise.lang;
+      // Human-like energetic praise speed and natural pitch
+      praiseUtterance.rate = praise.lang === 'zh-HK' ? 1.0 : 0.98;
+      praiseUtterance.pitch = 1.02; // natural emotional lift without chipmunk effect
+      const voice = getVoiceForLang(praise.lang);
+      if (voice) praiseUtterance.voice = voice;
+
+      praiseUtterance.onend = cleanup;
+      praiseUtterance.onerror = cleanup;
+
+      window.speechSynthesis.speak(praiseUtterance);
+    } catch (e) {
+      isPraiseSpeaking = false;
+      onFinish?.();
+    }
+  });
 };
 
 /**
@@ -708,27 +1194,36 @@ export const playPraiseAndExample = (
   exampleLang: 'zh-CN' | 'en-US' = 'zh-CN',
   onFinish?: () => void
 ) => {
-  if (typeof window === 'undefined' || !window.speechSynthesis) {
+  if (!exampleText) {
     onFinish?.();
     return;
   }
 
-  try {
-    if (!isPraiseSpeaking) {
-      window.speechSynthesis.cancel();
+  // 优先 Edge 神经音色读例句，失败回退浏览器
+  edgeTtsSpeak(exampleText, exampleLang, { onFinish }).then((ok) => {
+    if (ok) return;
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
+      onFinish?.();
+      return;
     }
-    const exampleUtterance = new SpeechSynthesisUtterance(exampleText);
-    exampleUtterance.lang = exampleLang;
-    exampleUtterance.rate = exampleLang === 'en-US' ? 0.88 : 0.95;
-    exampleUtterance.pitch = 1.0;
-    const exVoice = getVoiceForLang(exampleLang);
-    if (exVoice) exampleUtterance.voice = exVoice;
-    if (onFinish) exampleUtterance.onend = () => onFinish();
 
-    window.speechSynthesis.speak(exampleUtterance);
-  } catch (err) {
-    onFinish?.();
-  }
+    try {
+      if (!isPraiseSpeaking) {
+        window.speechSynthesis.cancel();
+      }
+      const exampleUtterance = new SpeechSynthesisUtterance(exampleText);
+      exampleUtterance.lang = exampleLang;
+      exampleUtterance.rate = exampleLang === 'en-US' ? 0.88 : 0.95;
+      exampleUtterance.pitch = 1.0;
+      const exVoice = getVoiceForLang(exampleLang);
+      if (exVoice) exampleUtterance.voice = exVoice;
+      if (onFinish) exampleUtterance.onend = () => onFinish();
+
+      window.speechSynthesis.speak(exampleUtterance);
+    } catch (err) {
+      onFinish?.();
+    }
+  });
 };
 
 /**
@@ -736,12 +1231,12 @@ export const playPraiseAndExample = (
  */
 export const getSyllableColor = (index: number): string => {
   const colors = [
-    'text-blue-600 font-bold',
-    'text-emerald-600 font-bold',
-    'text-amber-600 font-bold',
-    'text-purple-600 font-bold',
-    'text-rose-600 font-bold',
-    'text-cyan-600 font-bold'
+    'text-[#2E93C4] font-bold',
+    'text-[#48A757] font-bold',
+    'text-[#B8860B] font-bold',
+    'text-[#8258C7] font-bold',
+    'text-[#D14D72] font-bold',
+    'text-[#1D8A9E] font-bold'
   ];
   return colors[index % colors.length];
 };
