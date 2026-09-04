@@ -63,7 +63,7 @@ export const FloatingCompanion: React.FC<FloatingCompanionProps> = ({
   const handleClick = () => {
     if (!pet) return;
     playSoundEffect('pop');
-    setMotionAction('animate-pet-stretch');
+    setMotionAction('animate-pet-happyhop');
     const cheer = pet.cheerPhrases[Math.floor(Math.random() * pet.cheerPhrases.length)] || '主人加油！';
     setBubble(cheer);
     setTimeout(() => { setBubble(''); setMotionAction(''); }, 3000);

@@ -342,7 +342,7 @@ export interface StoryProgress {
 
 export const generateStoryWithVocabulary = async (
   topic: string,
-  wordCount: 10 | 15 = 10,
+  wordCount: number = 8,
   onProgress?: (p: StoryProgress) => void
 ): Promise<StoryData | null> => {
   // 无任何 AI 密钥：匹配最接近的内置预设故事
@@ -359,8 +359,8 @@ export const generateStoryWithVocabulary = async (
     const n1 = Math.max(3, Math.round(wordCount / 3));       // Level 1 数量
     const n3 = Math.max(2, Math.round(wordCount / 5));       // Level 3 数量
     const n2 = wordCount - n1 - n3;                          // Level 2 数量
-    const zhLen = wordCount === 15 ? '200-260' : '130-180';
-    const enLen = wordCount === 15 ? '140-180' : '90-130';
+    const zhLen = wordCount === 15 ? '160-210' : '105-145';
+    const enLen = wordCount === 15 ? '110-145' : '72-105';
 
     const prompt = `# 任务：为主题"${topic}"创作一篇儿童双语故事（给6-8岁小朋友）
 

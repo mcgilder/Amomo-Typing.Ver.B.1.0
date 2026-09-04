@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { playSoundEffect } from '../../utils';
 import {
   BaseGameProps, GameItem, useWordPool, useKeyDown, useGameLoop, useFloatScores,
-  TypedWord, ResultModal, GameHeader, GameBoard, BackButton, ScorePill, ComboFlame, calcStars,
+  TypedWord, ResultModal, GameHeader, GameBoard, BackButton, ScorePill, ComboFlame, calcStars, speakGameWord,
 } from './shared';
 
 // ============ ⛰️ 登山小勇士 · 超级跳跃登顶 ============
@@ -14,10 +14,25 @@ import {
 // 海拔带天气渐变：阳光草甸 → 云雾 → 飞雪 → 星空；25%/50%/75% 是篝火营地（额外金币）。
 // 连击 ≥ 6 触发「山羊冲刺」：跳跃整体提速 1.5 倍。全程无失败，只计用时和连击！
 // 登顶插旗 🚩 + 日出光芒 + 胜利结算！
+// 坑洞机制：12 阶中随机 4 阶（1/3）是坑洞——到坑洞前会弹红色警示，
+// 忍住不打字 3 秒坑洞自动填好；没忍住打字 = 掉回山脚重新出发！
 
 const TOTAL_STEPS = 12;
 const CAMP_CLIMBS = [3, 6, 9];   // 第几次跳跃到达营地（25% / 50% / 75%）
 const SUMMIT_BONUS = 60;
+const HOLE_COUNT = Math.round(TOTAL_STEPS / 3); // 坑洞数量（1/3 ≈ 4 个）
+
+// 每局随机生成坑洞位置（第 2~12 阶，避开营地和峰顶）
+const genHoles = (): Set<number> => {
+  const cands = Array.from({ length: TOTAL_STEPS - 1 }, (_, i) => i + 2)
+    .filter(n => !CAMP_CLIMBS.includes(n) && n < TOTAL_STEPS);
+  const holes = new Set<number>();
+  let guard = 0;
+  while (holes.size < HOLE_COUNT && holes.size < cands.length && guard++ < 50) {
+    holes.add(cands[Math.floor(Math.random() * cands.length)]);
+  }
+  return holes;
+};
 
 // 台阶折线坐标（百分比）：山脚左下 → 峰顶右上
 const posOf = (i: number): { x: number; y: number } =>
@@ -70,6 +85,11 @@ export const MountainClimbGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoi
   const [currentWord, setCurrentWord] = useState<GameItem>(() => pickWord());
   const [typed, setTyped] = useState('');
   const [climbing, setClimbing] = useState<ClimbAnim | null>(null);
+  // 坑洞机制状态
+  const [holeSet, setHoleSet] = useState<Set<number>>(genHoles);   // 本局坑洞位置
+  const [holeFilled, setHoleFilled] = useState<Set<number>>(new Set()); // 已忍住填好的坑洞
+  const [holePhase, setHolePhase] = useState(false);               // 正在"忍住别打"阶段
+  const [falling, setFalling] = useState(false);                   // 掉回山脚动画中
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
@@ -174,15 +194,15 @@ export const MountainClimbGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoi
       setClimbing(null);
 
       if (k >= TOTAL_STEPS) {
-        // ===== 登顶！ =====
-        const bonus = SUMMIT_BONUS + Math.max(0, 150 - Math.floor(elapsed / 10));
-        setScore(s => s + bonus);
-        setSummit(true);
-        playSoundEffect('victory', 0.4);
-        addScore((peakPos.x / 100) * boardW, (peakPos.y / 100) * 430, `登顶 +${bonus}`, '#E8A317');
-        t(2400, () => setFinished(true));
-      } else {
-        if (CAMP_CLIMBS.includes(k)) {
+          // ===== 登顶！ =====
+          const bonus = SUMMIT_BONUS + Math.max(0, 150 - Math.floor(elapsed / 10));
+          setScore(s => s + bonus);
+          setSummit(true);
+          playSoundEffect('victory', 0.4);
+          addScore((peakPos.x / 100) * boardW, (peakPos.y / 100) * 430, `登顶 +${bonus}`, '#E8A317');
+          t(2400, () => setFinished(true));
+        } else {
+          if (CAMP_CLIMBS.includes(k)) {
           // ===== 篝火营地：烤火回血 + 额外金币 =====
           setScore(s => s + 15);
           setCoinsEarned(c => c + 2);
@@ -193,21 +213,56 @@ export const MountainClimbGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoi
           playSoundEffect('bell', 0.25);
           playSoundEffect('sparkle', 0.2);
         }
-        setCurrentWord(pickWord());
+        // ===== 坑洞警示：下一阶是坑洞 → 进入"忍住别打"阶段 =====
+        if (holeSet.has(k + 1) && !holeFilled.has(k + 1)) {
+          setHolePhase(true);
+          playSoundEffect('wind', 0.18);
+          t(3000, () => {
+            setHolePhase(false);
+            setHoleFilled(prev => new Set(prev).add(k + 1));
+            setBanner('✅ 忍住了！坑洞填好啦，继续爬！');
+            playSoundEffect('sparkle', 0.2);
+            setScore(s => s + 5); // 克制力奖励
+            t(1300, () => setBanner(null));
+            setCurrentWord(pickWord());
+          });
+        } else {
+          setCurrentWord(pickWord());
+        }
       }
     });
-  }, [combo, stepsDone, boardW, elapsed, onEarnCoins, addScore, peakPos, pickWord, t]);
+  }, [combo, stepsDone, boardW, elapsed, onEarnCoins, addScore, peakPos, pickWord, t, holeSet, holeFilled]);
+
+  // ---------- 掉进坑洞：打字了 → 滚回山脚重新出发 ----------
+  const fallToBase = useCallback(() => {
+    playSoundEffect('error', 0.35);
+    setTimeout(() => playSoundEffect('pop', 0.22), 160);
+    setHolePhase(false);
+    setFalling(true);
+    setCombo(0);
+    setTyped('');
+    setBanner('🕳️ 哎呀掉进坑洞啦！回到山脚重新出发');
+    t(500, () => { setStepsDone(0); });
+    t(1200, () => {
+      setFalling(false);
+      setBanner(null);
+      setCurrentWord(pickWord());
+    });
+  }, [t, pickWord]);
 
   // ---------- 打字输入 ----------
   useKeyDown((e) => {
-    if (finished || climbing || summit || e.repeat) return;
+    if (finished || climbing || summit || falling || e.repeat) return;
     const key = e.key.toLowerCase();
     if (!/^[a-z]$/.test(key)) return; // 字母键只用于打字
+    // 坑洞警示阶段打字 = 掉进坑洞！
+    if (holePhase) { fallToBase(); return; }
     const w = currentWord.typing;
     if (key === w[typed.length]) {
       playSoundEffect('click', 0.12);
       const nt = typed + key;
       if (nt.length >= w.length) {
+        speakGameWord(currentWord); // 跳跃前语音朗读单词
         startClimb();
       } else {
         setTyped(nt);
@@ -233,6 +288,7 @@ export const MountainClimbGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoi
     setCoinsEarned(0); setElapsed(0); setSummit(false);
     setFinished(false); setCampTick(0); setBanner(null);
     setLandTick(0); setLandFx(null);
+    setHoleSet(genHoles()); setHoleFilled(new Set()); setHolePhase(false); setFalling(false);
     playSoundEffect('click');
   }, [pickWord]);
 
@@ -257,6 +313,7 @@ export const MountainClimbGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoi
         @keyframes microQuakeA { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(2px, 3px); } 55% { transform: translate(-2px, 1px); } 80% { transform: translate(1px, -1px); } }
         @keyframes microQuakeB { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-2px, 3px); } 55% { transform: translate(2px, 1px); } 80% { transform: translate(-1px, -1px); } }
         @keyframes idleBounce { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-4px) scale(1.03); } }
+        @keyframes fallSpin { 0% { transform: rotate(0deg) scale(1); } 100% { transform: rotate(-560deg) scale(0.55); opacity: 0.6; } }
         @keyframes mistDrift { 0%, 100% { transform: translateX(-26px); } 50% { transform: translateX(26px); } }
         @keyframes snowFall { 0% { transform: translateY(-16px) translateX(0) rotate(0deg); } 50% { transform: translateY(220px) translateX(18px) rotate(180deg); } 100% { transform: translateY(460px) translateX(-10px) rotate(360deg); } }
         @keyframes breathPuff { 0% { opacity: 0; transform: scale(0.5) translate(0, 0); } 30% { opacity: 0.85; } 100% { opacity: 0; transform: scale(1.3) translate(10px, -22px); } }
@@ -338,30 +395,67 @@ export const MountainClimbGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoi
             ))}
           </div>
 
-          {/* ---------- 台阶（石块 + 苔藓；营地有篝火） ---------- */}
+          {/* ---------- 台阶（石块 + 苔藓；营地有篝火；坑洞是黑洞陷阱） ---------- */}
           {Array.from({ length: TOTAL_STEPS }, (_, i) => {
             const p = posOf(i);
             const isCamp = CAMP_CLIMBS.includes(i + 1);
             const isNext = i === stepsDone && !summit;
             const done = i < stepsDone;
+            const isHole = holeSet.has(i + 1) && !holeFilled.has(i + 1);
             return (
               <div key={i} className="absolute z-20" style={{ left: `${p.x}%`, top: `${p.y}%`, transform: 'translate(-50%, -50%)' }}>
                 <div className={`relative rounded-lg ${isNext ? 'ring-4 ring-[#FFC94D] animate-pulse' : ''}`}
-                  style={{ width: 44, height: 24, background: done ? 'linear-gradient(180deg, #C6BCB0, #988D80)' : 'linear-gradient(180deg, #B8AEA2, #8D8275)', border: '2px solid #6E655B', boxShadow: '0 3px 0 rgba(0,0,0,0.25)' }}>
-                  <div className="absolute -top-1 left-1.5 w-2.5 h-2.5 rounded-full bg-[#6BCB77]" />
-                  <div className="absolute -top-0.5 right-2 w-1.5 h-1.5 rounded-full bg-[#6BCB77]/70" />
+                  style={isHole
+                    ? { width: 46, height: 26, background: 'radial-gradient(ellipse at center 60%, #14100A 0%, #33250F 75%)', border: '2px solid #241A0E', boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.75)' }
+                    : { width: 44, height: 24, background: done ? 'linear-gradient(180deg, #C6BCB0, #988D80)' : 'linear-gradient(180deg, #B8AEA2, #8D8275)', border: '2px solid #6E655B', boxShadow: '0 3px 0 rgba(0,0,0,0.25)' }}>
+                  {isHole ? (
+                    <span className="absolute inset-0 flex items-center justify-center text-sm select-none" style={{ filter: 'drop-shadow(0 0 3px #000)' }}>🕳️</span>
+                  ) : (
+                    <>
+                      <div className="absolute -top-1 left-1.5 w-2.5 h-2.5 rounded-full bg-[#6BCB77]" />
+                      <div className="absolute -top-0.5 right-2 w-1.5 h-1.5 rounded-full bg-[#6BCB77]/70" />
+                    </>
+                  )}
                 </div>
                 {isCamp && (
                   <span className={`absolute -top-8 left-1/2 -translate-x-1/2 text-2xl select-none ${campTick > 0 && i === stepsDone - 1 ? 'animate-breathe' : ''}`}
                     style={{ filter: 'drop-shadow(0 0 8px rgba(255,138,92,0.85))' }}>🔥</span>
                 )}
+                {/* 下一阶目标词：悬浮在台阶正上方（跟着台阶走，孩子视线不用来回扫） */}
+                {isNext && !finished && (
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2.5 z-30 pointer-events-none">
+                    {holePhase ? (
+                      <div className="bg-[#FFE3E3] rounded-2xl border-3 border-[#E0633A] px-3.5 py-1.5 shadow-lg animate-pulse flex flex-col items-center whitespace-nowrap">
+                        <span className="text-base font-black text-[#E0633A] font-kids">🕳️ 坑洞！别打字！</span>
+                        <span className="text-[10px] font-bold text-[#8A6F5C]">忍住不敲，等它自动填好 +5分</span>
+                      </div>
+                    ) : !climbing ? (
+                      <div className="bg-white/95 rounded-2xl border-3 border-[#6BCB77] px-3 py-1 shadow-md flex flex-col items-center whitespace-nowrap">
+                        <TypedWord word={currentWord.typing} typedLen={typed.length} size="md" />
+                        <span className="text-[10px] font-bold text-[#8A6F5C] font-kids">{currentWord.display}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
               </div>
             );
           })}
 
-          {/* ---------- 跳跃小人（🦸 + CSS 登山帽；三段式超级跳跃） ---------- */}
-          <div className="absolute z-30 pointer-events-none" style={{ left: climberLeft, top: climberTop, transform: 'translate(-50%, -62%)' }}>
-            {climbing ? (
+          {/* ---------- 跳跃小人（🦸 + CSS 登山帽；掉坑时翻滚下坠） ---------- */}
+          <div
+            className="absolute z-30 pointer-events-none"
+            style={{
+              left: climberLeft, top: climberTop, transform: 'translate(-50%, -62%)',
+              transition: falling ? 'top 0.5s cubic-bezier(0.55,0,1,0.6), left 0.5s ease-in' : undefined,
+            }}
+          >
+            {falling ? (
+              <div style={{ animation: 'fallSpin 0.7s ease-in forwards' }}>
+                <MountainHat />
+                <span className="block text-4xl select-none" style={{ filter: 'drop-shadow(0 3px 4px rgba(0,0,0,0.3))' }}>😵</span>
+                <span className="absolute -top-4 -right-3 text-lg animate-twinkle select-none">⭐</span>
+              </div>
+            ) : climbing ? (
               <div style={{ animation: `heroJump ${climbing.dur}ms linear forwards`, '--dx': `${climbing.dx}px`, '--dy': `${climbing.dy}px`, '--arc': `${climbing.arc}px` } as React.CSSProperties}>
                 <MountainHat />
                 <span className="block text-4xl select-none" style={{ filter: 'drop-shadow(0 3px 4px rgba(0,0,0,0.3))' }}>🦸</span>
@@ -374,7 +468,7 @@ export const MountainClimbGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoi
               </div>
             )}
             {/* 营地烤火：爱心回血动画 */}
-            {campTick > 0 && !climbing && stepsDone < TOTAL_STEPS && (
+            {campTick > 0 && !climbing && !falling && stepsDone < TOTAL_STEPS && (
               <span key={campTick} className="absolute -top-7 left-3 text-lg animate-heart-pop">❤️</span>
             )}
           </div>
@@ -423,22 +517,16 @@ export const MountainClimbGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoi
 
           <ScoreLayer />
 
-          {/* ---------- 当前单词大字 / 跳跃中 ---------- */}
-          {!finished && (
-            climbing || summit ? (
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 bg-white/90 rounded-2xl border-3 border-[#A57DE0] px-6 py-2.5 shadow-[0_4px_0_rgba(0,0,0,0.15)] flex items-center gap-2">
-                <span className="text-2xl animate-wiggle">🦸</span>
-                <span className="font-black text-[#5B4636] font-kids">{summit ? '插旗庆祝中…' : climbing?.rush ? '山羊冲刺！跳得飞快！' : '蓄力 — 超级跳跃！'}</span>
-              </div>
-            ) : (
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 bg-white/95 rounded-2xl border-3 border-[#6BCB77] px-5 py-2 shadow-[0_4px_0_rgba(0,0,0,0.15)] flex flex-col items-center min-w-[230px]">
-                <TypedWord word={currentWord.typing} typedLen={typed.length} size="lg" />
-                <span className="text-xs font-bold text-[#8A6F5C] font-kids flex items-center gap-1.5">
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E5F6EC] text-[#48A757] border border-[#C8EED4]">第{stepsDone + 1}阶</span>
-                  {currentWord.display}
-                </span>
-              </div>
-            )
+          {/* ---------- 跳跃/掉坑状态横幅（单词已上台阶，不再占底部大框） ---------- */}
+          {!finished && (climbing || summit || falling) && (
+            <div className={`absolute bottom-2 left-1/2 -translate-x-1/2 z-30 rounded-2xl border-3 px-6 py-2.5 shadow-[0_4px_0_rgba(0,0,0,0.15)] flex items-center gap-2 ${
+              falling ? 'bg-[#FFE3E3] border-[#E0633A]' : 'bg-white/90 border-[#A57DE0]'
+            }`}>
+              <span className="text-2xl animate-wiggle">{falling ? '😵' : '🦸'}</span>
+              <span className="font-black text-[#5B4636] font-kids">
+                {falling ? '哎呀！掉进坑洞…' : summit ? '插旗庆祝中…' : climbing?.rush ? '山羊冲刺！跳得飞快！' : '蓄力 — 超级跳跃！'}
+              </span>
+            </div>
           )}
 
           {finished && (

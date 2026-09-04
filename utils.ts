@@ -473,13 +473,172 @@ export const playSoundEffect = (type: SoundEffectType, volume: number = 0.25) =>
 };
 
 /**
- * Simple English Syllable Splitter (Heuristic-based)
+ * English Syllable Splitter (Rule-based, v2)
+ *
+ * 规则引擎（经全词库 573 词人工审计）：
+ * 1. 后缀：音节-le（ta/ble、lit/tle、ap/ple）、-es/-ed 何时独立成块（watch/es、want/ed）
+ *    与何时静音（names、liked、cake、horse 的魔法 e）
+ * 2. 元音组内拆分：io/ia 各自成音节（li/on、pi/an/o），tion/sion 保持整体；
+ *    元音间的 y 拆分（cray/on、play/er）；uie 特例（qui/et）
+ * 3. 辅音簇：单个辅音归后一音节（wa/ter，用户指定兜底规则）；
+ *    ck/ch 闭合前一音节（chick/en、teach/er）；th/sh/ph/wh/gh/qu 归后（mo/ther）；
+ *    3+ 辅音簇优先把"合法音节起首组合"留给后一音节（mon/ster、grand/pa、
+ *    bath/room、post/card），簇首二合字母闭合前一音节（black/board、eigh/teen）
+ * 4. 常见不规则词（按拼写切分）走 OVERRIDE 词表
+ * 5. 空格/连字符保留为独立块，支持短语（pencil box、hard-working）
  */
+
+// 常见不规则词的标准切分（全部按原拼写切，拼接后与原词完全一致）
+const SYLLABLE_OVERRIDE: Record<string, string[]> = {
+  'seven': ['sev', 'en'], 'eleven': ['e', 'lev', 'en'],
+  'seventeen': ['sev', 'en', 'teen'],
+  'family': ['fam', 'i', 'ly'], 'animal': ['an', 'i', 'mal'],
+  'elephant': ['el', 'e', 'phant'], 'vegetable': ['veg', 'e', 'ta', 'ble'],
+  'birthday': ['birth', 'day'], 'river': ['riv', 'er'],
+  'study': ['stud', 'y'], 'money': ['mon', 'ey'],
+  'evening': ['eve', 'ning'], 'everyone': ['ev', 'ery', 'one'],
+  'notebook': ['note', 'book'], 'homework': ['home', 'work'],
+  'sometimes': ['some', 'times'],
+  'body': ['bod', 'y'], 'panda': ['pan', 'da'], 'taxi': ['tax', 'i'],
+  'shadow': ['shad', 'ow'], 'cinema': ['cin', 'e', 'ma'], 'comic': ['com', 'ic'],
+  'second': ['sec', 'ond'], 'museum': ['mu', 'se', 'um'],
+  'usually': ['u', 'su', 'al', 'ly'], 'very': ['ver', 'y'], 'many': ['man', 'y'],
+  'idea': ['i', 'de', 'a'], 'poem': ['po', 'em'], 'science': ['sci', 'ence'],
+  'heavier': ['heav', 'i', 'er'], 'healthy': ['health', 'y'], 'helpful': ['help', 'ful'],
+  'hiking': ['hik', 'ing'], 'living': ['liv', 'ing'],
+  'rainy': ['rain', 'y'], 'cloudy': ['cloud', 'y'], 'snowy': ['snow', 'y'],
+  'playground': ['play', 'ground'], 'classmate': ['class', 'mate'],
+  'businessman': ['busi', 'ness', 'man'], 'dictionary': ['dic', 'tion', 'ar', 'y'],
+  'kitchen': ['kitch', 'en'], 'climbing': ['climb', 'ing'],
+};
+
+// 可以作为音节起首的辅音组合
+const ONSET_CLUSTERS = [
+  'bl', 'br', 'ch', 'cl', 'cr', 'dr', 'fl', 'fr', 'gl', 'gr', 'pl', 'pr',
+  'sc', 'sk', 'sl', 'sm', 'sn', 'sp', 'st', 'sw', 'th', 'tr', 'tw', 'wh',
+  'ph', 'sh', 'wr', 'qu', 'kn',
+  'scr', 'shr', 'spl', 'spr', 'str', 'squ', 'thr',
+];
+
+// 辅音簇末尾最长的"合法音节起首"后缀的起始下标；找不到返回 -1
+const longestOnsetSuffix = (c: string): number => {
+  for (const len of [3, 2]) {
+    if (c.length >= len + 1 && ONSET_CLUSTERS.includes(c.slice(c.length - len))) {
+      return c.length - len;
+    }
+  }
+  if (c.length >= 2) return c.length - 1; // 单个辅音总能做音节起首
+  return -1;
+};
+
+const isVowelChar = (ch: string, idx: number): boolean =>
+  'aeiou'.includes(ch) || (ch === 'y' && idx > 0);
+
+const splitSingleWord = (word: string): string[] => {
+  const lower = word.toLowerCase();
+  if (word.length <= 3) return [word];
+  if (SYLLABLE_OVERRIDE[lower]) return SYLLABLE_OVERRIDE[lower];
+  if (/[^a-z]/.test(lower)) return [word]; // 缩写/撇号词整体返回（i'm、let's、TV）
+  const chars = lower.split('');
+  const n = chars.length;
+  const silent = new Array<boolean>(n).fill(false);
+
+  // ---------- 后缀处理 ----------
+  if (lower.endsWith('es')) {
+    const stem = lower.slice(0, -2);
+    const b1 = stem.slice(-1), b2 = stem.slice(-2);
+    if (b1 === 's' || b1 === 'x' || b1 === 'z' || b2 === 'ch' || b2 === 'sh') {
+      return [...splitSingleWord(stem), word.slice(-2)]; // 读 /ɪs/ 的 -es
+    }
+    silent[n - 2] = true; // 静音 e（names、grapes）
+  } else if (lower.endsWith('ed')) {
+    const b1 = lower.slice(0, -2).slice(-1);
+    if (b1 === 't' || b1 === 'd') {
+      return [...splitSingleWord(lower.slice(0, -2)), word.slice(-2)]; // 读 /ɪd/ 的 -ed
+    }
+    silent[n - 2] = true; // 静音（played、liked、jumped）
+  } else if (chars[n - 1] === 'e') {
+    const c1 = chars[n - 2], c2 = chars[n - 3];
+    if (c1 === 'l' && c2 && !isVowelChar(c2, n - 3)) {
+      return [...splitSingleWord(lower.slice(0, -3)), word.slice(-3)]; // 音节 le
+    }
+    if (c1 && !isVowelChar(c1, n - 2)) {
+      silent[n - 1] = true; // 魔法 e（cake、horse、these）
+    }
+  }
+
+  // ---------- 元音组（含组内拆分） ----------
+  const isV = (i: number): boolean =>
+    i >= 0 && i < n && isVowelChar(chars[i], i) && !silent[i];
+  const groups: Array<[number, number]> = [];
+  let i = 0;
+  while (i < n) {
+    if (isV(i)) {
+      let j = i;
+      while (isV(j + 1)) j++;
+      if (i === j) {
+        groups.push([i, j]);
+      } else {
+        let start = i;
+        for (let k = i; k < j; k++) {
+          let cut = false;
+          if (chars[k] === 'i' && (chars[k + 1] === 'o' || chars[k + 1] === 'a')
+            && chars[k - 1] !== 't' && chars[k - 1] !== 's') cut = true; // io/ia（tion/sion 除外）
+          if (chars[k] === 'y' && k > i && k < j) cut = true; // 元音间的 y（crayon、player）
+          if (lower.slice(i, j + 1) === 'uie' && chars[k] === 'i') cut = true; // quiet
+          if (cut) { groups.push([start, k]); start = k + 1; }
+        }
+        groups.push([start, j]);
+      }
+      i = j + 1;
+    } else i++;
+  }
+  if (groups.length <= 1) return [word];
+
+  // ---------- 辅音簇切分 ----------
+  const cuts = new Set<number>();
+  for (let g = 0; g < groups.length - 1; g++) {
+    const [, e1] = groups[g];
+    const [s2] = groups[g + 1];
+    const cs = e1 + 1, ce = s2 - 1;
+    const len = ce - cs + 1;
+    if (len <= 0) { cuts.add(s2); continue; }        // 元音相邻
+    if (len === 1) { cuts.add(cs); continue; }       // 单辅音归后（开音节）
+    const c = chars.slice(cs, ce + 1).join('');
+    if (len === 2) {
+      if (c === 'ck' || c === 'ch') cuts.add(cs + 2); // 闭合前一音节（chicken、pocket、teacher）
+      else if (['th', 'sh', 'ph', 'wh', 'gh', 'qu'].includes(c)) cuts.add(cs); // 归后（mother）
+      else cuts.add(cs + 1);                          // 中间切（rabbit、window、sister）
+    } else {
+      const head2 = c.slice(0, 2);
+      if (['ck', 'ch', 'th', 'sh', 'ph', 'wh', 'gh'].includes(head2)) {
+        cuts.add(cs + 2); // 簇首二合字母闭合前一音节（blackboard、bathroom、eighteen）
+      } else {
+        const on = longestOnsetSuffix(c);
+        cuts.add(on >= 0 ? cs + on : cs + 1); // monster、grandpa、postcard、friendly
+      }
+    }
+  }
+
+  // ---------- 应用切分（保留原大小写） ----------
+  const sorted = [...cuts].sort((a, b) => a - b);
+  const out: string[] = [];
+  let prev = 0;
+  for (const c of sorted) { out.push(word.slice(prev, c)); prev = c; }
+  out.push(word.slice(prev));
+  return out.filter(s => s);
+};
+
 export const splitSyllables = (word: string): string[] => {
-  if (!word || word.length <= 3) return [word];
-  const syllableRegex = /[^aeiouy]*[aeiouy]+(?:[^aeiouy](?![aeiouy]))*/gi;
-  const result = word.match(syllableRegex);
-  return result && result.length > 0 ? result : [word];
+  if (!word) return [word];
+  // 空格/连字符保留为独立块，支持多词短语与复合词
+  const tokens = word.split(/([\s-]+)/).filter(t => t.length > 0);
+  const out: string[] = [];
+  for (const t of tokens) {
+    if (/^[\s-]+$/.test(t)) { out.push(t.includes(' ') ? ' ' : t); continue; }
+    out.push(...splitSingleWord(t));
+  }
+  return out.length ? out : [word];
 };
 
 /**
@@ -932,7 +1091,12 @@ export const toCantoneseColloquial = (text: string): string => {
  * Speak immediately (for word preview upon index change)
  * Does NOT cancel if praise encouragement is currently playing!
  */
-export const speakDirect = (text: string, lang: 'zh-CN' | 'en-US' | 'zh-HK' = 'zh-CN', forceCancel: boolean = false) => {
+export const speakDirect = (
+  text: string,
+  lang: 'zh-CN' | 'en-US' | 'zh-HK' = 'zh-CN',
+  forceCancel: boolean = false,
+  opts?: { slow?: boolean }   // slow: 语速再减慢15%（英文长故事朗读用）
+) => {
   if (typeof window === 'undefined') return;
   // 夸奖语音播报中且非强制打断：让夸奖说完
   if (isPraiseSpeaking && !forceCancel) {
@@ -946,7 +1110,10 @@ export const speakDirect = (text: string, lang: 'zh-CN' | 'en-US' | 'zh-HK' = 'z
   const spokenText = (lang === 'zh-HK' && !isAlreadyCantonese) ? toCantoneseColloquial(text) : text;
 
   // 优先 Edge 神经音色（晓晓/Aria/曉曼），失败回退浏览器
-  edgeTtsSpeak(spokenText, lang).then((ok) => {
+  // slow：语速整体 ×0.85（Edge rate 按速度百分比换算，浏览器按 rate 乘法）
+  const edgeBase = EDGE_BASE_RATES[lang] ?? 0;
+  const edgeRate = opts?.slow ? Math.round(((1 + edgeBase / 100) * 0.85 - 1) * 100) : edgeBase;
+  edgeTtsSpeak(spokenText, lang, { rate: edgeRate }).then((ok) => {
     if (ok) return;
     if (!window.speechSynthesis) return;
     try {
@@ -958,7 +1125,8 @@ export const speakDirect = (text: string, lang: 'zh-CN' | 'en-US' | 'zh-HK' = 'z
       const utterance = new SpeechSynthesisUtterance(spokenText);
       utterance.lang = lang;
       // Optimal human prosody and melodic continuity
-      utterance.rate = lang === 'en-US' ? 0.88 : (lang === 'zh-HK' ? 0.98 : 0.95);
+      const baseRate = lang === 'en-US' ? 0.88 : (lang === 'zh-HK' ? 0.98 : 0.95);
+      utterance.rate = opts?.slow ? baseRate * 0.85 : baseRate;
       utterance.pitch = 1.0; // 1.0 preserves natural human tone contours and prevents robotic stutter
       const voice = getVoiceForLang(lang);
       if (voice) utterance.voice = voice;

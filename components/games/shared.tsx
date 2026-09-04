@@ -1,5 +1,13 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { playSoundEffect } from '../../utils';
+import { playSoundEffect, speakDirect } from '../../utils';
+
+// ============ 游戏内打完单词 → 语音朗读（英语词读单词，语文词读汉字） ============
+export const speakGameWord = (item: GameItem) => {
+  try {
+    const isChinese = /[\u4e00-\u9fff]/.test(item.display);
+    speakDirect(isChinese ? item.display : item.typing, isChinese ? 'zh-CN' : 'en-US');
+  } catch { /* 静音失败不阻塞游戏 */ }
+};
 
 // ============ 共享类型 ============
 export interface GameItem {
@@ -11,7 +19,36 @@ export interface BaseGameProps {
   wordList: GameItem[];
   onEarnCoins?: (amount: number) => void;
   onBack: () => void;
+  difficulty?: GameDifficulty;
 }
+
+// ============ 难度分级（6 档，默认 3 档） ============
+export type GameDifficulty = 1 | 2 | 3 | 4 | 5 | 6;
+
+export const DIFFICULTY_LEVELS: Array<{ level: GameDifficulty; label: string; hint: string }> = [
+  { level: 1, label: '🐢 龟龟慢速', hint: '超慢超简单，刚上手最合适' },
+  { level: 2, label: '🦥 慢慢热身', hint: '节奏放缓，轻松练习' },
+  { level: 3, label: '🐻 标准速度', hint: '默认难度，适合大多数小朋友' },
+  { level: 4, label: '🐇 小小提速', hint: '原版速度，小有挑战' },
+  { level: 5, label: '🐆 高手冲刺', hint: '手速燃烧，反应要快' },
+  { level: 6, label: '🚀 极速传说', hint: '极限挑战，你敢来吗' },
+];
+
+// 移动物体速度倍率（越大越快越难）
+export const DIFF_SPEED: Record<GameDifficulty, number> = {
+  1: 0.55, 2: 0.75, 3: 0.9, 4: 1.0, 5: 1.18, 6: 1.4,
+};
+
+// 时间窗口倍率（越大等待越久越简单；同时拉长生成间隔）
+export const DIFF_TIME: Record<GameDifficulty, number> = {
+  1: 1.6, 2: 1.3, 3: 1.12, 4: 1.0, 5: 0.85, 6: 0.72,
+};
+
+// 游戏内统一取难度参数（未传时默认 3 档）
+export const useDifficulty = (difficulty?: GameDifficulty): { level: GameDifficulty; speedMul: number; timeMul: number } => {
+  const level = (difficulty && difficulty >= 1 && difficulty <= 6 ? difficulty : 3) as GameDifficulty;
+  return { level, speedMul: DIFF_SPEED[level], timeMul: DIFF_TIME[level] };
+};
 
 // ============ 词池抽取（避免连续重复） ============
 export const useWordPool = (wordList: GameItem[]) => {

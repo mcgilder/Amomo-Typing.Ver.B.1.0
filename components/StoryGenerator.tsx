@@ -37,8 +37,8 @@ export const StoryGenerator: React.FC<StoryGeneratorProps> = ({
   const [zhDialect, setZhDialect] = useState<'mandarin' | 'cantonese'>('mandarin');
   // 流式生成预览：AI 边写边显示（打字机效果）
   const [partialPreview, setPartialPreview] = useState<StoryProgress | null>(null);
-  // 生词数量固定为 10 个（不再提供 15 词模式）
-  const WORDS_TARGET = 10;
+  // 生词数量固定为 8 个（更聚焦，减少孩子压力）
+  const WORDS_TARGET = 8;
 
   // Active story with trimmed words
   const currentStory = useMemo(() => {
@@ -448,7 +448,7 @@ export const StoryGenerator: React.FC<StoryGeneratorProps> = ({
 
               {/* English Voice */}
               <button
-                onClick={() => speakDirect(currentStory.storyEn, 'en-US', true)}
+                onClick={() => speakDirect(currentStory.storyEn, 'en-US', true, { slow: true })}
                 className="text-xs md:text-sm bg-[#E3F2FA] text-[#2E93C4] border-2 border-[#BBE2F2] hover:bg-[#D3EAF6] px-3 py-1.5 rounded-xl font-black flex items-center gap-1 transition-transform active:scale-95 cursor-pointer"
                 title="英文朗读"
               >
@@ -496,12 +496,12 @@ export const StoryGenerator: React.FC<StoryGeneratorProps> = ({
                         const spoken = getSpokenZh(sentIdx);
                         speakDirect(spoken.text, spoken.lang, true);
                       }}
-                      className={`inline cursor-pointer select-none rounded px-0.5 transition-colors duration-150 box-decoration-clone ${
+                      className={`inline cursor-pointer select-none rounded-md px-1 transition-all duration-150 box-decoration-clone ${
                         isReading
-                          ? 'bg-[#FFE3A3] text-[#7A4A00] font-medium'
+                          ? 'bg-[#FFC94D] text-[#5B4636] font-black ring-2 ring-[#E8A317] rounded-md shadow-sm'
                           : isContainingHoveredWord
                           ? 'bg-[#FFF3D6]/60 text-[#7A4A00]'
-                        : 'hover:bg-[#FFF3D6]/40'
+                          : 'hover:bg-[#FFF3D6]/40'
                       }`}
                       title={zhDialect === 'cantonese' ? '点击用粤语朗读本句' : '点击朗读本句'}
                     >
@@ -543,14 +543,14 @@ export const StoryGenerator: React.FC<StoryGeneratorProps> = ({
                       key={sentIdx}
                       onClick={() => {
                         setActiveReadingSentence(sent);
-                        speakDirect(sent, 'en-US', true);
+                        speakDirect(sent, 'en-US', true, { slow: true });
                       }}
-                      className={`inline cursor-pointer select-none rounded px-0.5 transition-colors duration-150 box-decoration-clone ${
+                      className={`inline cursor-pointer select-none rounded-md px-1 transition-all duration-150 box-decoration-clone ${
                         isReading
-                          ? 'bg-[#BBE2F2] text-[#2E93C4] font-medium'
+                          ? 'bg-[#FFC94D] text-[#5B4636] font-black ring-2 ring-[#E8A317] rounded-md shadow-sm'
                           : isContainingHoveredWord
-                          ? 'bg-[#E3F2FA]/60 text-[#2E93C4]'
-                        : 'hover:bg-[#E3F2FA]/40'
+                          ? 'bg-[#FFF3D6]/60 text-[#7A4A00]'
+                          : 'hover:bg-[#E3F2FA]/40'
                       }`}
                       title="Click to read sentence"
                     >

@@ -232,7 +232,7 @@ export const PET_TOOLS: PetTool[] = [
     id: 'icecream', name: '甜蜜冰淇淋', emoji: '🍦', category: 'food', cost: 12,
     hungerAdd: 20, happyAdd: 30, cleanAdd: -5, energyAdd: 8,
     animClass: 'animate-pet-icecream', particles: '🍦 ❄️ 🍧',
-    desc: '舔一口，幸福地左右摇摆'
+    desc: '仰起头舔呀舔，甜到眯眼睛'
   },
   // —— 玩具（玩耍） ——
   {
@@ -252,7 +252,7 @@ export const PET_TOOLS: PetTool[] = [
     id: 'bath', name: '香香泡泡浴', emoji: '🛁', category: 'care', cost: 10,
     hungerAdd: 0, happyAdd: 10, cleanAdd: 40, energyAdd: 0,
     animClass: 'animate-pet-bath', particles: '🫧 🛁 💦',
-    desc: '泡泡飞舞，舒服得眯眼睛'
+    desc: '泡泡浴里打个滚，甩甩水珠香喷喷'
   },
   {
     id: 'brush', name: '柔软梳毛刷', emoji: '🪮', category: 'care', cost: 5,
@@ -355,7 +355,7 @@ export const DesktopPet: React.FC<DesktopPetProps> = ({
   const [toolFilter, setToolFilter] = useState<'all' | 'food' | 'toy' | 'care' | 'sleep'>('all');
   const [petAnimation, setPetAnimation] = useState('');
   const [bubbleText, setBubbleText] = useState('');
-  const [flyingItem, setFlyingItem] = useState<{ emoji: string; particles: string } | null>(null);
+  const [flyingItem, setFlyingItem] = useState<{ id: string; emoji: string; particles: string } | null>(null);
   const [showEvolution, setShowEvolution] = useState(false);
   const [mood, setMood] = useState('😊');
 
@@ -394,7 +394,7 @@ export const DesktopPet: React.FC<DesktopPetProps> = ({
 
   const handleInteract = () => {
     playSoundEffect('pop');
-    setPetAnimation('animate-pet-stretch');
+    setPetAnimation('animate-pet-happyhop');
     const hour = new Date().getHours();
     const greeting = hour < 6 ? '夜深了，我们明天再玩吧～' : hour < 11 ? '早上好呀！新的一天加油！' : hour < 14 ? '中午好～吃完饭休息一下吧！' : hour < 18 ? '下午好！来局游戏怎么样？' : '晚上好～睡前练会儿打字吧！';
     const quotes = [greeting, `${currentPet.name}最喜欢你啦！`, `今天心情${mood}，陪我玩会儿嘛～`];
@@ -414,7 +414,7 @@ export const DesktopPet: React.FC<DesktopPetProps> = ({
     playSoundEffect('coin');
     // 触发独特动作 + 道具飞入动画
     setPetAnimation(tool.animClass);
-    setFlyingItem({ emoji: tool.emoji, particles: tool.particles });
+    setFlyingItem({ id: tool.id, emoji: tool.emoji, particles: tool.particles });
     const feeling: Record<string, string> = {
       cookie: '嘎吱嘎吱！香脆小饼干，手指力量满满！',
       fish: '嗷呜一口吞！鲜美小鱼干，元气满满！',
@@ -519,6 +519,30 @@ export const DesktopPet: React.FC<DesktopPetProps> = ({
             </div>
           )}
 
+          {/* 专属环境特效：泡泡浴冒泡泡 / 梳毛冒爱心 / 音乐盒飘音符 */}
+          {flyingItem && (
+            <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
+              {flyingItem.id === 'bath' && [0, 1, 2, 3, 4, 5].map(i => (
+                <span key={i} className="absolute text-2xl animate-bubble-rise select-none"
+                  style={{ left: `${28 + (i * 17) % 46}%`, top: '60%', animationDelay: `${i * 0.25}s`, animationDuration: '1.5s' }}>
+                  {i % 2 ? '🫧' : '💧'}
+                </span>
+              ))}
+              {flyingItem.id === 'brush' && [0, 1, 2].map(i => (
+                <span key={i} className="absolute text-2xl animate-heart-pop select-none"
+                  style={{ left: `${36 + i * 14}%`, top: '42%', animationDelay: `${i * 0.32}s` }}>
+                  💖
+                </span>
+              ))}
+              {flyingItem.id === 'musicbox' && ['🎵', '🎶', '🎵', '🎶', '🎵', '🎶'].map((e, i) => (
+                <span key={i} className="absolute text-xl animate-float-score select-none"
+                  style={{ left: `${26 + i * 10}%`, top: `${34 + (i % 2) * 14}%`, animationDelay: `${i * 0.2}s` }}>
+                  {e}
+                </span>
+              ))}
+            </div>
+          )}
+
           {/* 气泡 */}
           <div className="w-full flex justify-center h-14 items-center z-10 mt-1">
             {bubbleText ? (
@@ -539,18 +563,79 @@ export const DesktopPet: React.FC<DesktopPetProps> = ({
               <div
                 className={`w-40 h-40 bg-white/95 rounded-full flex items-center justify-center text-8xl shadow-xl border-4 relative ${currentEvo.aura} ${petAnimation || 'animate-pet-breathe'}`}
               >
-                {currentPet.avatarEmoji}
-                {evoStage === 3 && <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-3xl animate-float-y select-none">👑</div>}
-                {currentAccessory && currentAccessory.id !== 'none' && (
-                  <div className={`absolute filter drop-shadow-xl pointer-events-none ${
-                    currentAccessory.type === 'glasses' ? 'top-16 left-1/2 -translate-x-1/2 text-3xl z-20'
-                    : currentAccessory.type === 'wand' ? '-right-4 bottom-3 rotate-12 text-3xl z-20'
-                    : currentAccessory.type === 'badge' ? '-bottom-2 left-1/2 -translate-x-1/2 text-3xl z-20'
-                    : '-top-6 left-1/2 -translate-x-1/2 text-4xl z-20'
-                  }`}>
-                    {currentAccessory.emoji}
+                {/* 宠物本体（z-10：披风在身后、墨镜帽子在身前） */}
+                <span className="relative z-10 select-none">{currentPet.avatarEmoji}</span>
+
+                {/* 披风：盖着肩膀、在身体后面（z-[5]） */}
+                {currentAccessory && currentAccessory.id === 'cape' && (
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[5] w-[118px] h-[58px] pointer-events-none">
+                    <div
+                      className="w-full h-full"
+                      style={{
+                        background: 'linear-gradient(180deg, #E0633A 0%, #C4451F 55%, #A33318 100%)',
+                        clipPath: 'polygon(0% 0%, 100% 0%, 94% 100%, 80% 76%, 64% 100%, 50% 80%, 36% 100%, 20% 76%, 6% 100%)',
+                        borderTopLeftRadius: 42, borderTopRightRadius: 42,
+                        boxShadow: '0 3px 6px rgba(0,0,0,0.22)',
+                      }}
+                    />
+                    {/* 披风领口 */}
+                    <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-[74px] h-2.5 rounded-full bg-[#FFC94D] shadow" />
                   </div>
                 )}
+
+                {/* 勋章：挂在胸前 */}
+                {currentAccessory && currentAccessory.id === 'medal' && (
+                  <div className="absolute top-[96px] left-1/2 -translate-x-1/2 z-20 pointer-events-none flex flex-col items-center">
+                    <div className="w-[3px] h-4 bg-[#2E93C4]" />
+                    <span className="text-2xl" style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))' }}>🥇</span>
+                  </div>
+                )}
+
+                {/* 帽子类：贴在头顶区域，不再飘到头外面 */}
+                {currentAccessory && currentAccessory.id === 'crown' && (
+                  <span className="absolute top-2.5 left-1/2 -translate-x-1/2 text-2xl z-20 pointer-events-none" style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.28))' }}>👑</span>
+                )}
+                {currentAccessory && currentAccessory.id === 'ribbon' && (
+                  <span className="absolute top-11 left-6 text-2xl z-20 pointer-events-none -rotate-[14deg]" style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.25))' }}>🎀</span>
+                )}
+                {currentAccessory && currentAccessory.id === 'halo' && (
+                  <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-16 h-[18px] rounded-[50%] border-[5px] border-[#FFD700] z-20 pointer-events-none"
+                    style={{ boxShadow: '0 0 12px rgba(255,215,0,0.85), inset 0 0 6px rgba(255,215,0,0.6)' }} />
+                )}
+
+                {/* 派对帽：CSS 锥形彩帽（歪着戴更可爱，只有帽子本身） */}
+                {currentAccessory && currentAccessory.id === 'party_hat' && (
+                  <div className="absolute top-[2px] left-1/2 z-20 pointer-events-none" style={{ transform: 'translateX(-55%) rotate(14deg)' }}>
+                    <div className="relative w-0 h-0 border-l-[15px] border-r-[15px] border-b-[36px] border-l-transparent border-r-transparent border-b-[#A57DE0]">
+                      {/* 彩条纹 */}
+                      <div className="absolute top-[13px] -left-[11px] w-[22px] h-[4px] rounded-full bg-[#FFC94D]" />
+                      <div className="absolute top-[22px] -left-[8px] w-[16px] h-[3.5px] rounded-full bg-[#6BCB77]" />
+                      {/* 帽顶尖球 */}
+                      <div className="absolute -top-[9px] left-1/2 -translate-x-1/2 w-[11px] h-[11px] rounded-full bg-[#FF8FAB] border-2 border-white/70" />
+                    </div>
+                  </div>
+                )}
+
+                {/* 墨镜：CSS 镜片盖住眼睛（无镜腿，直接架在脸上） */}
+                {currentAccessory && currentAccessory.type === 'glasses' && (
+                  <div className="absolute top-[54px] left-1/2 -translate-x-1/2 z-20 pointer-events-none flex items-center">
+                    <div className="w-[36px] h-[21px] rounded-[10px] bg-[#161D2B] border-2 border-[#0A0F18] overflow-hidden relative">
+                      <div className="absolute top-[4px] left-[5px] w-[13px] h-[4px] rounded-full bg-white/40 rotate-[-15deg]" />
+                    </div>
+                    <div className="w-[14px] h-[3.5px] bg-[#161D2B]" />
+                    <div className="w-[36px] h-[21px] rounded-[10px] bg-[#161D2B] border-2 border-[#0A0F18] overflow-hidden relative">
+                      <div className="absolute top-[4px] left-[5px] w-[13px] h-[4px] rounded-full bg-white/40 rotate-[-15deg]" />
+                    </div>
+                  </div>
+                )}
+
+                {/* 魔法棒：贴在身侧手持 */}
+                {currentAccessory && currentAccessory.type === 'wand' && (
+                  <span className="absolute -right-3 bottom-4 text-3xl z-20 pointer-events-none rotate-12" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🪄</span>
+                )}
+
+                {/* 3 阶进化皇冠：贴头顶 */}
+                {evoStage === 3 && <div className="absolute top-1 left-1/2 -translate-x-1/2 text-2xl animate-float-y z-20 select-none">👑</div>}
                 {enchantLvl > 0 && (
                   <div className="absolute -bottom-2 -left-2 bg-[#A57DE0] text-white text-[11px] px-2 py-0.5 rounded-full font-black shadow border-2 border-white">
                     +{enchantLvl}★

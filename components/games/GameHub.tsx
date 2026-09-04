@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { TEXTBOOK_RESOURCES } from '../../constants';
 import { ExerciseItem, Mode } from '../../types';
 import { playSoundEffect } from '../../utils';
-import { GameItem } from './shared';
+import { GameItem, DIFFICULTY_LEVELS, GameDifficulty } from './shared';
 import { FrogMazeGame } from './FrogMazeGame';
 import { WhackMoleGame } from './WhackMoleGame';
 import { RacingGame } from './RacingGame';
@@ -48,9 +48,9 @@ const GAME_CARDS: GameCard[] = [
     tag: '速度反应', btnClass: 'btn-honey', iconBg: 'bg-[#FFF3D6] border-[#FFE3A3]'
   },
   {
-    id: 'RACE', emoji: '🏎️', name: '彩虹赛车',
-    desc: '敲对路牌单词点燃氮气，换道躲油渍，1000米超越兔子车手！',
-    tag: '竞速冲刺', btnClass: 'btn-coral', iconBg: 'bg-[#FFE9E0] border-[#FFD1BE]'
+    id: 'RACE', emoji: '🏎️', name: '闪避赛车',
+    desc: '敲对单词点燃氮气！换道躲开油桶，追上蓝色对手车冲过终点！',
+    tag: '竞速闪避', btnClass: 'btn-coral', iconBg: 'bg-[#FFE9E0] border-[#FFD1BE]'
   },
   {
     id: 'BALLOON', emoji: '🎈', name: '气球派对',
@@ -78,6 +78,16 @@ export const GameHub: React.FC<GameHubProps> = ({ customWordList, customTitle, o
   const [activeGame, setActiveGame] = useState<GameId | null>(null);
   const [selectedMode, setSelectedMode] = useState<Mode>(Mode.ENGLISH);
   const [selectedBook, setSelectedBook] = useState<string>('GRADE 1-Fall');
+  const [difficulty, setDifficulty] = useState<GameDifficulty>(() => {
+    const saved = Number(localStorage.getItem('amomo_typing_difficulty_v2'));
+    return saved >= 1 && saved <= 6 ? (saved as GameDifficulty) : 3;
+  });
+
+  const changeDifficulty = (d: GameDifficulty) => {
+    playSoundEffect('click');
+    setDifficulty(d);
+    localStorage.setItem('amomo_typing_difficulty_v2', String(d));
+  };
 
   const wordList: GameItem[] = useMemo(() => {
     if (customWordList && customWordList.length > 0) {
@@ -99,7 +109,7 @@ export const GameHub: React.FC<GameHubProps> = ({ customWordList, customTitle, o
     setActiveGame(id);
   };
 
-  const commonProps = { wordList, onEarnCoins, onBack: () => setActiveGame(null) };
+  const commonProps = { wordList, onEarnCoins, onBack: () => setActiveGame(null), difficulty };
 
   if (activeGame === 'FROG') return <FrogMazeGame {...commonProps} />;
   if (activeGame === 'MOLE') return <WhackMoleGame {...commonProps} />;
@@ -122,6 +132,30 @@ export const GameHub: React.FC<GameHubProps> = ({ customWordList, customTitle, o
           <p className="text-xs md:text-sm text-[#8A6F5C] font-bold mt-1">
             {customTitle ? `正在使用专属词库：${customTitle}` : '八大游戏边玩边练，每个游戏都赚金币养宠物！'}
           </p>
+
+          {/* 难度调节：6 档，默认 3 档（乌龟最慢 → 火箭最快） */}
+          <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+            <span className="text-xs font-black text-[#8A6F5C]">⚡ 游戏难度</span>
+            <div className="flex items-center gap-1 bg-[#FFF8EE] p-1 rounded-2xl border-3 border-[#FFE8C8]">
+              {DIFFICULTY_LEVELS.map(d => (
+                <button
+                  key={d.level}
+                  onClick={() => changeDifficulty(d.level)}
+                  title={d.hint}
+                  className={`w-7 h-7 rounded-xl text-xs font-black transition-all ${
+                    difficulty === d.level
+                      ? 'bg-[#FF8A5C] text-white shadow-[0_3px_0_#E0633A] scale-110'
+                      : 'text-[#8A6F5C] hover:bg-white'
+                  }`}
+                >
+                  {d.level}
+                </button>
+              ))}
+            </div>
+            <span className="text-[11px] font-black text-[#E0633A] bg-[#FFE9E0] px-2.5 py-1 rounded-full border-2 border-[#FFD1BE]">
+              {DIFFICULTY_LEVELS[difficulty - 1].label}
+            </span>
+          </div>
         </div>
 
         {/* 词库来源选择 */}

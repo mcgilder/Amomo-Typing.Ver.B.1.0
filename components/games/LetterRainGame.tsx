@@ -3,7 +3,7 @@ import { playSoundEffect } from '../../utils';
 import {
   BaseGameProps, GameItem, useWordPool, useKeyDown, useRafLoop, useFloatScores,
   ResultModal, GameHeader, GameBoard, BackButton, ScorePill, ComboFlame,
-  TypedWord, BigLetter, calcStars,
+  TypedWord, BigLetter, calcStars, useDifficulty, speakGameWord,
 } from './shared';
 
 // ============ 🌧️ 字母雨·小猫打伞（入门游戏，难度最低） ============
@@ -155,7 +155,50 @@ const Umbrella: React.FC<{ open: boolean }> = ({ open }) => (
   </div>
 );
 
-export const LetterRainGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onBack }) => {
+// ============ 水滴形字母牌（上尖下圆的真水滴，字母在水滴肚子里） ============
+const DropLetter: React.FC<{ ch: string; typed?: boolean; small?: boolean }> = ({ ch, typed, small }) => {
+  const size = small ? 56 : 76;
+  return (
+    <div className="relative flex flex-col items-center select-none" style={{ width: size + 8 }}>
+      {/* 水滴顶尖 */}
+      <div
+        className="w-0 h-0 border-l-transparent border-r-transparent"
+        style={{
+          borderLeftWidth: small ? 9 : 12,
+          borderRightWidth: small ? 9 : 12,
+          borderBottomWidth: small ? 15 : 20,
+          borderBottomColor: typed ? '#8ED0A8' : '#7FC4EE',
+        }}
+      />
+      {/* 水滴圆身 */}
+      <div
+        className={`rounded-full flex items-center justify-center border-[3px] border-white/90 -mt-1 ${
+          typed
+            ? 'bg-gradient-to-b from-[#A8E6C3] to-[#6BCB77]'
+            : 'bg-gradient-to-b from-[#9FD4F2] to-[#5FA8DD]'
+        }`}
+        style={{
+          width: size,
+          height: size,
+          boxShadow: typed
+            ? '0 4px 0 rgba(0,0,0,0.18), inset 0 -6px 10px rgba(0,90,40,0.18)'
+            : '0 4px 0 rgba(0,0,0,0.18), inset 0 -6px 10px rgba(0,70,130,0.22)',
+        }}
+      >
+        <span
+          className={`font-mono font-black text-white drop-shadow ${small ? 'text-4xl' : 'text-5xl'}`}
+        >
+          {ch}
+        </span>
+        {/* 高光 */}
+        <span className="absolute left-[18%] top-[16%] w-[22%] h-[30%] bg-white/55 rounded-full blur-[1.5px] pointer-events-none" />
+      </div>
+    </div>
+  );
+};
+
+export const LetterRainGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onBack, difficulty }) => {
+  const { speedMul } = useDifficulty(difficulty); // 难度：雨滴下落速度
   const pickWord = useWordPool(wordList);
   const [target, setTarget] = useState<GameItem>(() => pickWord());
   const [typedLen, setTypedLen] = useState(0);
@@ -225,7 +268,7 @@ export const LetterRainGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins,
       letter: word[typedLenRef.current] || 'a',
       x: 12 + Math.random() * 76,
       y: SPAWN_Y,
-      speed: 74 + Math.random() * 14, // ~4-4.7 秒落地，3 秒左右到伞面
+      speed: (74 + Math.random() * 14) * speedMul, // 难度越低落得越慢（~4-4.7 秒落地）
     };
     dropRef.current = d;
     setDrop(d);
@@ -244,7 +287,7 @@ export const LetterRainGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins,
     spawnDrop();
   }, [endGame, spawnDrop]);
 
-  // 敲完一整个单词：彩虹横贯 + 翻倍奖励
+  // 敲完一整个单词：彩虹横贯 + 翻倍奖励 + 语音朗读单词
   const completeWord = useCallback(() => {
     const bonus = targetRef.current.typing.length * 20; // 每字母10分 × 2
     setScore(s => s + bonus);
@@ -252,6 +295,7 @@ export const LetterRainGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins,
     onEarnCoins?.(2);
     playSoundEffect('combo', 0.3);
     playSoundEffect('sparkle', 0.18);
+    speakGameWord(targetRef.current);
     setRainbow(true);
     later(() => setRainbow(false), 1600);
     addScore(boardW() / 2, 130, `+${bonus} 🌈`, '#9775FA');
@@ -290,7 +334,7 @@ export const LetterRainGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins,
     later(() => {
       setHappy(false);
       nextRound();
-    }, 1000);
+    }, 650);
   }, [addSplash, addScore, completeWord, later, nextRound]);
 
   // 雨滴落地没接住：小猫淋湿 1.5 秒
@@ -361,7 +405,14 @@ export const LetterRainGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins,
       setCatX(clamp(d.x, 16, 84));
       setUmbrellaOpen(true);
       playSoundEffect('whoosh', 0.15);
-      if (d.y >= UMBRELLA_Y) hitCatch(d, Math.min(d.y, GROUND_Y - 10)); // 按晚了也照样接住
+      if (d.y >= UMBRELLA_Y) {
+        hitCatch(d, Math.min(d.y, GROUND_Y - 10)); // 按晚了也照样接住
+      } else {
+        // 敲对瞬间雨滴加速 3 倍落向伞面（不用干等它慢慢飘下来）
+        const fast = { ...d, speed: d.speed * 3 };
+        dropRef.current = fast;
+        setDrop(fast);
+      }
     } else {
       // 敲错：只轻晃 + 音效 + 清连击（无惩罚）
       playSoundEffect('error', 0.15);
@@ -460,21 +511,18 @@ export const LetterRainGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins,
             </div>
           ))}
 
-          {/* 目标单词卡 */}
-          <div className="absolute top-3 inset-x-0 flex justify-center z-30 pointer-events-none">
-            <div className="bg-white/95 rounded-[1.2rem] border-[3px] border-[#4FB8E7] shadow-[0_5px_0_#3D9AC9] px-5 py-1.5 flex flex-col items-center">
-              <span className="text-[11px] font-black text-[#8A6F5C]">{target.display} · 敲雨滴上的字母</span>
-              <TypedWord word={target.typing.toLowerCase()} typedLen={typedLen} size="lg" className="mt-0.5" />
+          {/* 目标单词进度（角落小徽章：字母本身就在雨滴上，不抢主视野） */}
+          <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+            <div className="bg-white/90 rounded-full border-[3px] border-[#4FB8E7] shadow-[0_3px_0_#3D9AC9] px-4 py-1 flex items-center gap-2">
+              <span className="text-[11px] font-black text-[#8A6F5C]">{target.display}</span>
+              <TypedWord word={target.typing.toLowerCase()} typedLen={typedLen} size="sm" />
             </div>
           </div>
 
-          {/* 字母雨滴（BigLetter 水滴牌） */}
+          {/* 字母雨滴（水滴形字母牌） */}
           {drop && (
             <div className="absolute z-20" style={{ left: `${drop.x}%`, top: drop.y, transform: 'translate(-50%,-50%)' }}>
-              <div className="relative flex flex-col items-center">
-                <div className="w-3.5 h-5 rounded-t-full rounded-b-[45%] bg-gradient-to-b from-[#9FD4F2] to-[#6FB7E8] border-2 border-white/80 -mb-2 z-10" />
-                <BigLetter ch={drop.letter.toUpperCase()} />
-              </div>
+              <DropLetter ch={drop.letter.toUpperCase()} />
             </div>
           )}
 
@@ -492,10 +540,7 @@ export const LetterRainGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins,
                 animation: 'bounceOff .68s ease-out forwards',
               }}
             >
-              <div className="flex flex-col items-center">
-                <div className="w-3 h-4 rounded-t-full bg-[#7FC4EE] -mb-1.5" />
-                <BigLetter ch={bounce.letter} state="typed" size="md" />
-              </div>
+              <DropLetter ch={bounce.letter} typed small />
             </div>
           )}
 

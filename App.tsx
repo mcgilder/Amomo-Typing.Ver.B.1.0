@@ -18,6 +18,7 @@ import TypingGame from './components/TypingGame';
 import StoryGenerator from './components/StoryGenerator';
 import DesktopPet, { INITIAL_PETS, ACCESSORIES } from './components/DesktopPet';
 import FloatingCompanion from './components/FloatingCompanion';
+import HabitTracker from './components/HabitTracker';
 
 const LOCAL_STORAGE_KEY_STATS = 'amomo_typing_stats_v2';
 const LOCAL_STORAGE_KEY_PETS = 'amomo_typing_pets_v2';
@@ -568,6 +569,7 @@ export const App: React.FC = () => {
     { id: Tab.STORY, icon: '📖', label: 'AI故事', color: 'bg-[#A57DE0]', shadow: 'shadow-[0_4px_0_#8258C7]' },
     { id: Tab.GAME, icon: '🎮', label: '游戏乐园', color: 'bg-[#6BCB77]', shadow: 'shadow-[0_4px_0_#48A757]' },
     { id: Tab.PET, icon: '🐱', label: '萌宠小屋', color: 'bg-[#FF8FAB]', shadow: 'shadow-[0_4px_0_#E0678A]' },
+    { id: Tab.HABIT, icon: '🌟', label: '好习惯', color: 'bg-[#E8A317]', shadow: 'shadow-[0_4px_0_#B8860B]' },
     { id: Tab.STATS, icon: '📊', label: '成长档案', color: 'bg-[#4FB8E7]', shadow: 'shadow-[0_4px_0_#2E93C4]' }
   ];
 
@@ -636,9 +638,9 @@ export const App: React.FC = () => {
       <main className="flex-1 p-3 md:p-5 flex flex-col items-center max-w-[1800px] w-full mx-auto">
         {/* TAB 1: PRACTICE */}
         {activeTab === Tab.PRACTICE && (
-          <div className="w-full flex flex-col items-center gap-6 animate-fade-in">
+          <div className="w-full flex flex-col items-center gap-4 animate-fade-in">
             {/* Top Toolbar */}
-            <div className="w-full story-card p-4 flex justify-between items-center flex-wrap gap-4">
+            <div className="w-full story-card px-4 py-3 flex justify-between items-center flex-wrap gap-3">
               <div className="flex items-center gap-3 flex-wrap">
                 {/* Language Switch */}
                 <div className="flex p-1 bg-[#FFF8EE] rounded-2xl border-3 border-[#FFE8C8]">
@@ -727,74 +729,76 @@ export const App: React.FC = () => {
               </button>
             </div>
 
-            {/* Target Word Practice Card */}
-            <div className="w-full story-card p-8 md:p-12 flex flex-col items-center min-h-[420px] justify-center relative overflow-hidden">
-              {/* 进度条 */}
-              <div className="absolute top-0 left-0 h-2.5 bg-gradient-to-r from-[#FF8A5C] via-[#FFC94D] to-[#6BCB77] rounded-r-full transition-all duration-300" style={{ width: `${progress}%` }} />
+            {/* 打字主区：行1=单词卡(8列)+信息卡(4列)，行2=键盘(8列)+统计(4列)
+                单词卡与键盘同列同宽 → 单词水平居中即与键盘的中线对齐 */}
+            <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-stretch">
+              {/* 行1-左：目标单词卡 */}
+              <div className="lg:col-span-8 story-card px-5 md:px-8 py-4 md:py-5 flex flex-col items-center justify-center relative overflow-hidden min-h-[228px]">
+                {/* 进度条 */}
+                <div className="absolute top-0 left-0 h-2.5 bg-gradient-to-r from-[#FF8A5C] via-[#FFC94D] to-[#6BCB77] rounded-r-full transition-all duration-300" style={{ width: `${progress}%` }} />
 
-              {/* Top Progress & Combo Pill */}
-              <div className="absolute top-4 left-6 right-6 flex justify-between items-center text-xs font-bold text-[#8A6F5C]">
-                <span>📖 进度: {currentIndex + 1} / {exerciseList.length || 1} 词</span>
-                {combo > 1 && (
-                  <span className="bg-[#FFF3D6] text-[#8A5F00] px-3 py-1 rounded-full font-black text-xs animate-bounce border-2 border-[#FFE3A3]">
-                    🔥 连击 x{combo}
-                  </span>
-                )}
-              </div>
-
-              {!isStarted ? (
-                <div className="text-center flex flex-col items-center gap-4 py-8">
-                  <div className="text-8xl animate-float-y select-none">🎒</div>
-                  <h3 className="text-2xl md:text-3xl font-black font-kids">准备好练习打字了吗？</h3>
-                  <p className="text-xs md:text-sm text-[#8A6F5C] max-w-md">
-                    跟着屏幕提示与键盘指法提示，敲击对应字母，开启快乐打字之旅！
-                  </p>
-                  <button onClick={handleStartStop} className="btn-candy btn-grass mt-2 px-8 py-3 text-sm">
-                    立即开始 🚀
-                  </button>
+                {/* Top Progress & Combo Pill */}
+                <div className="absolute top-3 left-5 right-5 flex justify-between items-center text-xs font-bold text-[#8A6F5C]">
+                  <span>📖 进度: {currentIndex + 1} / {exerciseList.length || 1} 词</span>
+                  {combo > 1 && (
+                    <span className="bg-[#FFF3D6] text-[#8A5F00] px-3 py-1 rounded-full font-black text-xs animate-bounce border-2 border-[#FFE3A3]">
+                      🔥 连击 x{combo}
+                    </span>
+                  )}
                 </div>
-              ) : (
-                <div className="w-full flex flex-col items-center">
-                  {/* Chinese PinYin Mode */}
-              {mode === Mode.CHINESE ? (
-                <>
-                  {/* Big Hanzi */}
-                  <div className="text-7xl md:text-9xl font-black text-[#E0633A] mb-4 font-kids leading-none drop-shadow-sm select-none">
-                    {exerciseList[currentIndex]?.chinese}
-                  </div>
 
-                  {/* 带声调拼音直接融入打字行：敲无调字母，显示带调字母（逐位一一对应） */}
-                  <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-6">
-                    {(() => {
-                      // toned 与 plain 逐字符等长（声调符号替换元音字母，长度不变）
-                      const plainChars = exerciseList[currentIndex]?.text.split('') || [];
-                      const tonedChars = getPinyinWithTones(exerciseList[currentIndex]?.chinese || '').split('');
-                      return plainChars.map((char, i) => {
-                        const isTyped = i < inputBuffer.length;
-                        const isCurrentChar = i === inputBuffer.length && !isWaitingForSpace;
-
-                        return (
-                          <div key={i} className="relative flex flex-col items-center">
-                            <span
-                              className={`text-6xl md:text-8xl font-black transition-all font-mono leading-none ${
-                                isTyped ? 'text-[#C4AE97]' : 'text-[#2E93C4]'
-                              }`}
-                            >
-                              {tonedChars[i] ?? char}
-                            </span>
-                            {isCurrentChar && (
-                              <div className="absolute -bottom-3 w-full h-2.5 bg-[#FFC94D] rounded-full animate-bounce" />
-                            )}
-                          </div>
-                        );
-                      });
-                    })()}
+                {!isStarted ? (
+                  <div className="text-center flex flex-col items-center gap-2.5 py-5">
+                    <div className="text-7xl animate-float-y select-none">🎒</div>
+                    <h3 className="text-xl md:text-2xl font-black font-kids">准备好练习打字了吗？</h3>
+                    <p className="text-xs md:text-sm text-[#8A6F5C] max-w-md">
+                      跟着屏幕提示与键盘指法提示，敲击对应字母，开启快乐打字之旅！
+                    </p>
+                    <button onClick={handleStartStop} className="btn-candy btn-grass mt-1 px-8 py-2.5 text-sm">
+                      立即开始 🚀
+                    </button>
                   </div>
-                </>
-              ) : (
-                    /* English Mode with Syllable Colors */
-                    <div className="flex flex-col items-center">
-                      <div className="flex flex-wrap justify-center items-center gap-y-3 mb-6">
+                ) : (
+                  <div className="w-full flex-1 flex flex-col items-center justify-center pt-6">
+                    {/* Chinese PinYin Mode */}
+                    {mode === Mode.CHINESE ? (
+                      <>
+                        {/* Big Hanzi */}
+                        <div className="text-7xl md:text-8xl font-black text-[#E0633A] mb-1 font-kids leading-none drop-shadow-sm select-none">
+                          {exerciseList[currentIndex]?.chinese}
+                        </div>
+
+                        {/* 带声调拼音直接融入打字行：敲无调字母，显示带调字母（逐位一一对应） */}
+                        <div className="flex flex-wrap justify-center gap-2 md:gap-3">
+                          {(() => {
+                            // toned 与 plain 逐字符等长（声调符号替换元音字母，长度不变）
+                            const plainChars = exerciseList[currentIndex]?.text.split('') || [];
+                            const tonedChars = getPinyinWithTones(exerciseList[currentIndex]?.chinese || '').split('');
+                            return plainChars.map((char, i) => {
+                              const isTyped = i < inputBuffer.length;
+                              const isCurrentChar = i === inputBuffer.length && !isWaitingForSpace;
+
+                              return (
+                                <div key={i} className="relative flex flex-col items-center">
+                                  <span
+                                    className={`text-5xl md:text-6xl font-black transition-all font-mono leading-none ${
+                                      isTyped ? 'text-[#C4AE97]' : 'text-[#2E93C4]'
+                                    }`}
+                                  >
+                                    {tonedChars[i] ?? char}
+                                  </span>
+                                  {isCurrentChar && (
+                                    <div className="absolute -bottom-3 w-full h-2.5 bg-[#FFC94D] rounded-full animate-bounce" />
+                                  )}
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </>
+                    ) : (
+                      /* English Mode with Syllable Colors（单词与键盘同列居中） */
+                      <div className="flex flex-wrap justify-center items-end gap-x-2 gap-y-3">
                         {(() => {
                           let charCounter = 0;
                           return currentSyllables.map((syllable, sIndex) => {
@@ -847,66 +851,79 @@ export const App: React.FC = () => {
                             );
                           });
                         })()}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Audio, Translation & Example Section */}
-                  <div className="min-h-24 flex flex-col items-center justify-center">
-                    {isWaitingForSpace ? (
-                      <div className="flex flex-col items-center animate-fade-in text-center">
-                        <p className="text-xl md:text-3xl text-[#48A757] font-black mb-2 italic leading-tight font-kids">
-                          "{exerciseList[currentIndex]?.example}"
-                        </p>
-                        {mode === Mode.ENGLISH && EN_EXAMPLE_ZH[exerciseList[currentIndex]?.example || ''] && (
-                          <p className="text-sm md:text-lg text-[#8A6F5C] font-bold mb-3">
-                            {EN_EXAMPLE_ZH[exerciseList[currentIndex]!.example]}
-                          </p>
-                        )}
-                        <div className="bg-[#FFF3D6] text-[#8A5F00] border-3 border-[#FFE3A3] px-6 py-2 rounded-full text-base md:text-lg font-black animate-pulse flex items-center gap-2">
-                          <span>⌨️</span> 按下 [ 空格键 Space ] 挑战下一个单词
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-2">
-                        {mode === Mode.ENGLISH && (
-                          <>
-                            <div className="flex items-center gap-3">
-                              <span className="text-2xl md:text-4xl font-black text-[#2E93C4] font-kids">
-                                {exerciseList[currentIndex]?.translation}
-                              </span>
-                              <button
-                                onClick={() => readCurrentItem(exerciseList[currentIndex])}
-                                className="w-9 h-9 bg-[#E3F2FA] hover:bg-[#BBE2F2] text-[#2E93C4] rounded-full flex items-center justify-center text-sm transition-transform active:scale-90 border-2 border-[#BBE2F2]"
-                                title="重听单词发音"
-                              >
-                                🔊
-                              </button>
-                            </div>
-                            {exerciseList[currentIndex]?.phonetic && (
-                              <span className="text-base md:text-lg italic font-mono text-[#8A6F5C]">
-                                {exerciseList[currentIndex]?.phonetic}
-                              </span>
-                            )}
-                          </>
-                        )}
-                        {mode === Mode.CHINESE && (
-                          <button
-                            onClick={() => readCurrentItem(exerciseList[currentIndex])}
-                            className="text-xs bg-[#E5F6EC] hover:bg-[#C8EED4] text-[#357F43] px-3 py-1 rounded-full font-bold transition-all flex items-center gap-1 border-2 border-[#C8EED4]"
-                          >
-                            <span>🔊 点击朗读读音</span>
-                          </button>
+                        {exerciseList[currentIndex]?.phonetic && (
+                          <span className="pb-2 text-base md:text-xl italic font-mono text-[#8A6F5C] select-none whitespace-nowrap">
+                            {exerciseList[currentIndex]?.phonetic}
+                          </span>
                         )}
                       </div>
                     )}
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
 
-            {/* Virtual Keyboard & Live Stats */}
-            <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* 行1-右：翻译与例句信息卡（打字内容的右边） */}
+              <div className="lg:col-span-4 story-card px-4 py-4 flex flex-col items-center justify-center gap-2.5 text-center min-h-[150px] lg:min-h-0">
+                {!isStarted ? (
+                  <div className="flex flex-col items-center gap-2 text-[#8A6F5C]">
+                    <span className="text-4xl animate-breathe select-none">👆</span>
+                    <p className="text-xs font-bold leading-relaxed">
+                      点击「开始练习」<br />跟着键盘高亮提示敲字母
+                    </p>
+                  </div>
+                ) : isWaitingForSpace ? (
+                  <div className="flex flex-col items-center animate-fade-in w-full">
+                    <p className="text-base md:text-xl text-[#48A757] font-black italic leading-snug font-kids">
+                      "{exerciseList[currentIndex]?.example}"
+                    </p>
+                    {mode === Mode.ENGLISH && EN_EXAMPLE_ZH[exerciseList[currentIndex]?.example || ''] && (
+                      <p className="text-xs md:text-sm text-[#8A6F5C] font-bold mb-2">
+                        {EN_EXAMPLE_ZH[exerciseList[currentIndex]!.example]}
+                      </p>
+                    )}
+                    <div className="bg-[#FFF3D6] text-[#8A5F00] border-3 border-[#FFE3A3] px-4 py-1.5 rounded-full text-xs md:text-sm font-black animate-pulse flex items-center gap-2 mt-1">
+                      <span>⌨️</span> 按下 [ 空格键 ] 挑战下一个
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 w-full">
+                    {mode === Mode.ENGLISH && (
+                      <>
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-2xl md:text-3xl font-black text-[#2E93C4] font-kids">
+                            {exerciseList[currentIndex]?.translation}
+                          </span>
+                          <button
+                            onClick={() => readCurrentItem(exerciseList[currentIndex])}
+                            className="w-9 h-9 bg-[#E3F2FA] hover:bg-[#BBE2F2] text-[#2E93C4] rounded-full flex items-center justify-center text-sm transition-transform active:scale-90 border-2 border-[#BBE2F2]"
+                            title="重听单词发音"
+                          >
+                            🔊
+                          </button>
+                        </div>
+                        <p className="text-xs md:text-sm text-[#8A6F5C] font-bold leading-snug px-1">
+                          {exerciseList[currentIndex]?.example}
+                        </p>
+                      </>
+                    )}
+                    {mode === Mode.CHINESE && (
+                      <>
+                        <button
+                          onClick={() => readCurrentItem(exerciseList[currentIndex])}
+                          className="text-xs bg-[#E5F6EC] hover:bg-[#C8EED4] text-[#357F43] px-3 py-1 rounded-full font-bold transition-all flex items-center gap-1 border-2 border-[#C8EED4]"
+                        >
+                          <span>🔊 点击朗读读音</span>
+                        </button>
+                        <p className="text-sm md:text-base text-[#8A6F5C] font-bold leading-snug px-1">
+                          {exerciseList[currentIndex]?.example}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 行2-左：虚拟键盘（与单词卡同列，指法提示与单词上下呼应） */}
               <div className="lg:col-span-8">
                 <Keyboard
                   targetKey={
@@ -919,17 +936,17 @@ export const App: React.FC = () => {
                 />
               </div>
 
-              {/* Stats Card */}
-              <div className="lg:col-span-4 story-card p-6 flex flex-col justify-around gap-4">
+              {/* 行2-右：本次统计（紧凑竖排） */}
+              <div className="lg:col-span-4 story-card px-4 py-4 flex flex-col justify-around gap-2.5">
                 <div className="text-center">
-                  <span className="text-[#8A6F5C] text-xs font-bold block mb-1">精准击键</span>
-                  <span className="text-5xl font-black text-[#E0633A] font-kids">{currentStats.correct}</span>
+                  <span className="text-[#8A6F5C] text-xs font-bold block mb-0.5">精准击键</span>
+                  <span className="text-4xl font-black text-[#E0633A] font-kids">{currentStats.correct}</span>
                   <span className="text-[11px] text-[#8A6F5C] block mt-0.5">次无误击打</span>
                 </div>
 
-                <div className="text-center border-t-2 border-[#F5EBDA] pt-4">
-                  <span className="text-[#8A6F5C] text-xs font-bold block mb-1">即时速度 (WPM)</span>
-                  <span className="text-5xl font-black text-[#48A757] font-kids">
+                <div className="text-center border-t-2 border-[#F5EBDA] pt-2.5">
+                  <span className="text-[#8A6F5C] text-xs font-bold block mb-0.5">即时速度 (WPM)</span>
+                  <span className="text-4xl font-black text-[#48A757] font-kids">
                     {Math.round(
                       currentStats.correct / (((Date.now() - currentStats.startTime) / 1000 / 60) || 1)
                     )}
@@ -937,8 +954,8 @@ export const App: React.FC = () => {
                   <span className="text-[11px] text-[#8A6F5C] block mt-0.5">字 / 分钟</span>
                 </div>
 
-                <div className="text-center border-t-2 border-[#F5EBDA] pt-4">
-                  <span className="text-[#8A6F5C] text-xs font-bold block mb-1">本次已赚取</span>
+                <div className="text-center border-t-2 border-[#F5EBDA] pt-2.5">
+                  <span className="text-[#8A6F5C] text-xs font-bold block mb-0.5">本次已赚取</span>
                   <span className="text-3xl font-black text-[#E8A317] font-kids flex items-center justify-center gap-1">
                     <span>+{Math.max(1, Math.round(currentStats.correct * 0.5))}</span>
                     <span className="text-xl">🪙</span>
@@ -947,6 +964,7 @@ export const App: React.FC = () => {
               </div>
             </div>
           </div>
+
         )}
 
         {/* TAB 2: GAMES */}
@@ -966,6 +984,16 @@ export const App: React.FC = () => {
           <StoryGenerator
             onStartPracticeWithWords={handleStartPracticeWithStoryWords}
             onStartGameWithWords={handleStartGameWithStoryWords}
+          />
+        )}
+
+        {/* TAB: 每日好习惯奖励登记 */}
+        {activeTab === Tab.HABIT && (
+          <HabitTracker
+            onEarnCoins={(amount) => {
+              setCoins(c => c + amount);
+              awardPetExp(amount * 2);
+            }}
           />
         )}
 
@@ -998,13 +1026,15 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Floating Desktop Pet Companion (Always visible cheering) */}
-      <FloatingCompanion
-        pet={activePet}
-        accessory={activeAccessory}
-        combo={combo}
-        lastAction={lastAction}
-      />
+      {/* Floating Desktop Pet Companion（萌宠小屋页隐藏：页面本身就有大宠物，避免悬浮卡遮挡道具按钮） */}
+      {activeTab !== Tab.PET && (
+        <FloatingCompanion
+          pet={activePet}
+          accessory={activeAccessory}
+          combo={combo}
+          lastAction={lastAction}
+        />
+      )}
     </div>
   );
 };

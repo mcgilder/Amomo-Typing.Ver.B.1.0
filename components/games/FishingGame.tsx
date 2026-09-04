@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { playSoundEffect } from '../../utils';
 import {
-  BaseGameProps, GameItem, useWordPool, useKeyDown, useRafLoop, useFloatScores,
-  TypedWord, ResultModal, GameHeader, GameBoard, BackButton, ScorePill, ComboFlame, calcStars,
+  BaseGameProps, GameItem, useWordPool, useKeyDown, useRafLoop, useFloatScores, useDifficulty, speakGameWord,
+  ResultModal, GameHeader, GameBoard, BackButton, ScorePill, ComboFlame, TypedWord, calcStars,
 } from './shared';
 
 // ============ 🎣 猫咪钓鱼记 · 悠闲池塘（鱼儿左右往返游版） ============
@@ -53,7 +53,8 @@ const KIND_META: Record<FishKind, { emoji: string; size: string; base: number; l
   boot: { emoji: '🥾', size: 'text-4xl', base: 0, label: '旧靴' },
 };
 
-export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onBack }) => {
+export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onBack, difficulty }) => {
+  const { speedMul, timeMul } = useDifficulty(difficulty); // 难度：鱼儿游速与鱼群密度
   const pickWord = useWordPool(wordList);
   const boardRef = useRef<HTMLDivElement>(null);
 
@@ -113,7 +114,7 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
     const speed = (kind === 'small' ? 8.5 + Math.random() * 2.5
       : kind === 'fat' ? 4.8 + Math.random() * 1.2
       : kind === 'koi' ? 6.5 + Math.random() * 1.7
-      : 5.5 + Math.random() * 1.5) / 1000;   // %/ms → 约 5~11 %/s
+      : 5.5 + Math.random() * 1.5) * speedMul / 1000;   // %/ms → 难度越低游得越慢
     const lifeMs = kind === 'boot' ? 13000 + Math.random() * 4000 : 16000 + Math.random() * 6000;
     const id = Date.now() + Math.random();
     const y = 200 + Math.random() * 150;
@@ -213,6 +214,7 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
         setBasketTick(k => k + 1);
         playSoundEffect('coin', 0.2);
         playSoundEffect('sparkle', 0.15);
+        speakGameWord(f.item); // 钓上来！语音朗读单词
       }
     });
   }, [combo, lockedId, boardW, catLeft, onEarnCoins, fishRush, addSplash, addScore, t]);
@@ -260,7 +262,7 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
     const swimming = list.filter(f => f.state === 'swim').length;
     if (swimming < 4 && spawnCdRef.current <= 0) {
       spawnFish();
-      spawnCdRef.current = 1700 + Math.random() * 1400;
+      spawnCdRef.current = (1700 + Math.random() * 1400) * timeMul;
     }
 
     setSnap({ fish: list.map(f => ({ ...f })), elapsedMs: elapsedMsRef.current });
@@ -469,10 +471,10 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
                 style={{ transform: `translate3d(${fishPx}px, ${f.y}px, 0)` }}>
                 {/* 上下轻微浮动（整组带着牌子一起浮动） */}
                 <div className="relative" style={{ animation: f.state === 'swim' ? `fishBob 2.6s ease-in-out ${idx * 0.35}s infinite` : undefined }}>
-                  {/* 单词小牌：白底蓝边圆角，紧贴鱼身下方 */}
+                  {/* 单词大字牌：白底蓝边圆角，紧贴鱼身下方（字号加大，水中也看得清） */}
                   {f.state === 'swim' && (
-                    <div className={`absolute left-1/2 -translate-x-1/2 top-full -mt-1.5 rounded-xl px-2 py-0.5 shadow-md whitespace-nowrap ${isTarget ? 'border-3 border-[#FFC94D] scale-110 bg-white' : f.kind === 'boot' ? 'bg-[#F0EBE0] border-2 border-[#B8AE9C]' : 'bg-white border-2 border-[#4FB8E7]'}`}>
-                      <TypedWord word={f.item.typing} typedLen={f.typed.length} size="sm" />
+                    <div className={`absolute left-1/2 -translate-x-1/2 top-full -mt-1.5 rounded-xl px-2.5 py-1 shadow-md whitespace-nowrap ${isTarget ? 'border-3 border-[#FFC94D] scale-110 bg-white' : f.kind === 'boot' ? 'bg-[#F0EBE0] border-2 border-[#B8AE9C]' : 'bg-white border-2 border-[#4FB8E7]'}`}>
+                      <TypedWord word={f.item.typing} typedLen={f.typed.length} size="md" />
                       {f.kind === 'boot' && <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-black text-[#8A6F5C] bg-[#FFF3D6] rounded-full px-1.5 border border-[#FFE3A3]">别钓!</span>}
                     </div>
                   )}
@@ -542,18 +544,6 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
           )}
 
           <ScoreLayer />
-
-          {/* ---------- 当前单词大字 ---------- */}
-          {target && !finished && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 bg-white/95 rounded-2xl border-3 px-5 py-2 shadow-[0_4px_0_rgba(0,0,0,0.15)] flex flex-col items-center min-w-[230px]" style={{ borderColor: target.kind === 'koi' ? '#FFC94D' : '#4FB8E7' }}>
-              <TypedWord word={target.item.typing} typedLen={target.typed.length} size="lg" />
-              <span className="text-xs font-bold text-[#8A6F5C] font-kids flex items-center gap-1.5">
-                <span>{KIND_META[target.kind].emoji}</span>
-                {target.item.display}
-                {target.kind === 'koi' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#FFF3D6] text-[#B8860B] border border-[#FFE3A3]">稀有+3</span>}
-              </span>
-            </div>
-          )}
 
           {finished && (
             <ResultModal

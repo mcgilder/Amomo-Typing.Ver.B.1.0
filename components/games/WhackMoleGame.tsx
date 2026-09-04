@@ -3,7 +3,7 @@ import { playSoundEffect } from '../../utils';
 import {
   BaseGameProps, GameItem, useWordPool, useKeyDown, useGameLoop,
   TypedWord, ScorePill, ComboFlame, useFloatScores,
-  ResultModal, GameHeader, GameBoard, BackButton, calcStars
+  ResultModal, GameHeader, GameBoard, BackButton, calcStars, useDifficulty, speakGameWord
 } from './shared';
 
 // ============ 🔨 打地鼠 · 疯狂60秒 ============
@@ -179,11 +179,8 @@ const MoleFace: React.FC<{ state: MoleFaceState }> = ({ state }) => {
           </>
         )}
 
-        {/* 鼻子：粉色大椭圆鼻头 + 鼻孔两点 */}
-        <div className="absolute top-[31px] left-1/2 -translate-x-1/2 w-[22px] h-[15px] rounded-full bg-gradient-to-b from-[#F5A8BC] to-[#E489A2] border-2 border-[#C86F8C]">
-          <span className="absolute bottom-[2px] left-[4px] w-[4px] h-[5px] rounded-full bg-[#A54D6E]" />
-          <span className="absolute bottom-[2px] right-[4px] w-[4px] h-[5px] rounded-full bg-[#A54D6E]" />
-        </div>
+        {/* 鼻子：小巧圆鼻头（地鼠款，不是猪大鼻） */}
+        <div className="absolute top-[33px] left-1/2 -translate-x-1/2 w-[12px] h-[9px] rounded-full bg-gradient-to-b from-[#F5A8BC] to-[#E489A2] border-2 border-[#C86F8C]" />
 
         {/* 嘴：坏笑咧嘴弧线 + 白色大门牙（梯形龅牙）/ 被砸张嘴吐舌 */}
         {!hit ? (
@@ -205,7 +202,8 @@ const MoleFace: React.FC<{ state: MoleFaceState }> = ({ state }) => {
   );
 };
 
-export const WhackMoleGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onBack }) => {
+export const WhackMoleGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onBack, difficulty }) => {
+  const { timeMul } = useDifficulty(difficulty); // 难度：地鼠窗口期与冒出节奏
   const pickWord = useWordPool(wordList);
   const [over, setOver] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
@@ -304,7 +302,7 @@ export const WhackMoleGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
         const r = Math.random();
         const kind: MoleKind = r < 0.08 ? 'bomb' : r < 0.18 ? 'golden' : 'normal';
         // 窗口期：base 4s，连击每 +1 缩 0.15s，最低 1.2s（越打越快！）
-        const dur = Math.max(MIN_WINDOW, BASE_WINDOW - g.combo * COMBO_STEP);
+        const dur = Math.max(MIN_WINDOW * timeMul, (BASE_WINDOW - g.combo * COMBO_STEP) * timeMul);
         g.moles.push({
           id: ++idSeq.current,
           seq: idSeq.current,
@@ -319,7 +317,7 @@ export const WhackMoleGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
         playSoundEffect(kind === 'golden' ? 'bell' : 'bubble', 0.14);
       }
       // 生成节奏：连击越高越快
-      g.nextSpawnAt = now + (g.frenzy ? 1100 : Math.max(650, 1500 - g.combo * 70));
+      g.nextSpawnAt = now + (g.frenzy ? 1100 : Math.max(650, 1500 - g.combo * 70)) * timeMul;
     }
 
     rerender();
@@ -352,6 +350,7 @@ export const WhackMoleGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
       if (g.over || mole.state !== 'up') return;
       mole.state = 'hit';
       const golden = mole.kind === 'golden';
+      speakGameWord(mole.item); // 砸中后语音朗读单词
       const gained = (25 + g.combo * 5) * (golden ? 2 : 1);
       g.score += gained;
       g.hits += 1;
@@ -531,26 +530,19 @@ export const WhackMoleGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
             </div>
           )}
 
-          {/* 中央顶部大字：当前目标词（最后出现的优先） */}
+          {/* 中央顶部提示（仅炸弹警示；单词都举在地鼠手上，不重复占位） */}
           <div className="absolute top-2 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center pointer-events-none">
-            {active ? (
-              active.kind === 'bomb' ? (
-                <div className="bg-[#4A4038]/95 px-4 py-2 rounded-2xl border-3 border-[#E0633A] shadow-lg animate-wiggle">
-                  <div className="text-sm font-black text-[#FF9B8A] flex items-center gap-1.5">
-                    💣 别敲炸弹！等它缩回去
-                  </div>
+            {active && active.kind === 'bomb' ? (
+              <div className="bg-[#4A4038]/95 px-4 py-2 rounded-2xl border-3 border-[#E0633A] shadow-lg animate-wiggle">
+                <div className="text-sm font-black text-[#FF9B8A] flex items-center gap-1.5">
+                  💣 别敲炸弹！等它缩回去
                 </div>
-              ) : (
-                <div className={`px-4 py-1.5 rounded-2xl border-3 shadow-lg ${active.kind === 'golden' ? 'bg-gradient-to-b from-[#FFE28A] to-[#FFC94D] border-[#E8A317]' : 'bg-white/95 border-[#FFC94D]'}`}>
-                  <TypedWord word={active.item.typing} typedLen={active.typed.length} size="md" />
-                  <div className="text-center text-[10px] font-bold text-[#8A6F5C] mt-0.5">{active.item.display}</div>
-                </div>
-              )
-            ) : (
+              </div>
+            ) : !active ? (
               <div className="bg-white/80 px-4 py-1.5 rounded-2xl border-2 border-white/60 text-xs font-black text-[#8A6F5C]">
                 👀 地鼠马上钻出来…
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* 3x3 草地洞口 */}
@@ -590,7 +582,7 @@ export const WhackMoleGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
                               : 'bg-white border-[#4FB8E7]'
                           }`}
                         >
-                          <TypedWord word={mole.item.typing} typedLen={mole.typed.length} size="sm" />
+                          <TypedWord word={mole.item.typing} typedLen={mole.typed.length} size="md" />
                           <div className={`text-[9px] font-bold -mt-0.5 ${mole.kind === 'bomb' ? 'text-[#FF9B8A]' : 'text-[#8A6F5C]'}`}>
                             {mole.kind === 'bomb' ? '⚠ 别敲炸弹!' : mole.item.display}
                           </div>

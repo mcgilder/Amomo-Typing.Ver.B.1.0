@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { playSoundEffect } from '../../utils';
 import {
-  BaseGameProps, useKeyDown, useRafLoop, useFloatScores,
+  BaseGameProps, useKeyDown, useRafLoop, useFloatScores, useDifficulty,
   ResultModal, GameHeader, GameBoard, BackButton, ComboFlame,
   ScorePill, calcStars,
 } from './shared';
@@ -103,11 +103,28 @@ const ConfettiBurst: React.FC<Burst> = ({ x, y, color, smoke }) => {
           style={{ width: 13, height: 9, borderColor: color, background: `${color}55`, left: -6 + i * 15, top: 0, animation: `scrapFall .9s ease-in ${i * 0.1}s forwards` }}
         />
       ))}
+      {/* 小丝带条：旋转飘落的彩带庆祝 */}
+      {[0, 1, 2].map(i => {
+        const ang = ((i * 120 + 40) * Math.PI) / 180;
+        const dist = 44 + i * 15;
+        return (
+          <span
+            key={`ribbon-${i}`}
+            className="absolute rounded-full"
+            style={{
+              width: 15, height: 4, background: color, left: -7, top: -2,
+              ['--dx' as string]: `${Math.cos(ang) * dist}px`,
+              ['--dy' as string]: `${Math.sin(ang) * dist}px`,
+              animation: `ribbonFall .95s ease-out ${i * 0.05}s forwards`,
+            }}
+          />
+        );
+      })}
     </div>
   );
 };
 
-// ============ 小寿星（CSS 手绘，表情随战况变化：开心/叹气/吓到） ============
+// ============ 小寿星（CSS 手绘，表情随战况变化：开心/叹气/吓到；右手举玩具枪） ============
 const Kid: React.FC<{ mood: KidMood }> = ({ mood }) => (
   <div className="relative flex flex-col items-center select-none">
     {/* 叹气泡泡 */}
@@ -160,16 +177,31 @@ const Kid: React.FC<{ mood: KidMood }> = ({ mood }) => (
       <div className="absolute top-[19px] right-[4px] w-[7px] h-[4px] rounded-full bg-[#FF8FAB]/70" />
     </div>
     {/* 身体（小礼服） */}
-    <div className="relative w-[38px] h-[27px] rounded-t-[45%] rounded-b-lg bg-[#4FB8E7] border-2 border-white/80 -mt-[3px] overflow-hidden">
+    <div className="relative w-[38px] h-[27px] rounded-t-[45%] rounded-b-lg bg-[#4FB8E7] border-2 border-white/80 -mt-[3px] overflow-visible">
       <div className="absolute bottom-0 inset-x-0 h-[8px] bg-[#FFC94D]" />
       <div className="absolute top-[6px] left-1/2 -translate-x-1/2 w-[10px] h-[10px] rounded-full bg-[#FFC94D]/80" />
+      {/* 右手举着的玩具枪（斜向上 45° 瞄准气球） */}
+      <div className="absolute -right-[15px] top-[2px] w-[30px] h-[15px] origin-bottom-left" style={{ transform: 'rotate(-42deg)' }}>
+        {/* 枪管 */}
+        <div className="absolute inset-x-0 top-0 h-[9px] rounded-[4px] bg-gradient-to-b from-[#FF8A5C] to-[#E0633A] border-2 border-[#C4451F]" />
+        {/* 枪身握把 */}
+        <div className="absolute left-[2px] top-[7px] w-[10px] h-[10px] rounded-[3px] bg-[#E0633A] border-2 border-[#C4451F]" />
+        {/* 枪口准星 */}
+        <div className="absolute -right-[3px] top-[-4px] w-[7px] h-[4px] rounded-r-full bg-[#4FB8E7] border border-[#2E93C4]" />
+        {/* 开火闪光 */}
+        {mood === 'happy' && (
+          <span className="absolute -right-[12px] -top-[6px] text-[11px] leading-none select-none" style={{ animation: 'fuseSpark 0.2s ease-out' }}>✨</span>
+        )}
+      </div>
     </div>
   </div>
 );
 
-export const BalloonPartyGame: React.FC<BaseGameProps> = ({ onEarnCoins, onBack }) => {
+export const BalloonPartyGame: React.FC<BaseGameProps> = ({ onEarnCoins, onBack, difficulty }) => {
+  const { speedMul, timeMul } = useDifficulty(difficulty); // 难度：气球上升速度与生成节奏
   const [balloons, setBalloons] = useState<Balloon[]>([]);
   const [bursts, setBursts] = useState<Burst[]>([]);
+  const [traces, setTraces] = useState<Array<{ id: number; x1: number; y1: number; x2: number; y2: number }>>([]);
   const [timeLeft, setTimeLeft] = useState(GAME_TIME);
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
@@ -230,7 +262,7 @@ export const BalloonPartyGame: React.FC<BaseGameProps> = ({ onEarnCoins, onBack 
       letter: ALPHABET[Math.floor(Math.random() * 26)],
       x: 10 + Math.random() * 80,
       y: SPAWN_Y,
-      speed: 88 + Math.random() * 18, // 4~5 秒飘到顶
+      speed: (88 + Math.random() * 18) * speedMul, // 难度越低飘得越慢（4~5 秒飘到顶）
       kind,
       color: BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
       swayDur: 2.3 + Math.random() * 1.7,
@@ -258,8 +290,13 @@ export const BalloonPartyGame: React.FC<BaseGameProps> = ({ onEarnCoins, onBack 
     syncBalloons(balloonsRef.current.filter(b => b.id !== id));
   };
 
-  // 敲对！气球炸开
+  // 敲对！气球炸开（枪口弹道 + 爆开丝带）
   const popBalloon = useCallback((b: Balloon) => {
+    // 弹道痕迹：从小寿星的枪口射向气球
+    const bw = boardRef.current?.getBoundingClientRect().width ?? 800;
+    const tid = uid();
+    setTraces(prev => [...prev, { id: tid, x1: bw / 2 + 42, y1: 372, x2: px(b.x), y2: b.y }]);
+    setTimeout(() => setTraces(prev => prev.filter(t => t.id !== tid)), 260);
     removeBalloon(b.id);
     playSoundEffect('pop', 0.3);
     const gold = b.kind === 'gold';
@@ -349,7 +386,7 @@ export const BalloonPartyGame: React.FC<BaseGameProps> = ({ onEarnCoins, onBack 
     if (escaper) onEscape(escaper);
 
     spawnAcc.current += dt;
-    const interval = partyRef.current ? 1050 : 1550;
+    const interval = (partyRef.current ? 1050 : 1550) * timeMul;
     if (spawnAcc.current >= interval && next.filter(b => b.state === 'rising').length < 6) {
       spawnAcc.current = 0;
       spawnBalloon();
@@ -430,6 +467,8 @@ export const BalloonPartyGame: React.FC<BaseGameProps> = ({ onEarnCoins, onBack 
       <style>{`
         @keyframes confettiPop { 0%{transform:translate(0,0) rotate(0deg);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) rotate(540deg);opacity:0} }
         @keyframes scrapFall { 0%{transform:translateY(0) rotate(0deg);opacity:1} 100%{transform:translateY(120px) rotate(220deg);opacity:0} }
+        @keyframes ribbonFall { 0%{transform:translate(0,0) rotate(0deg);opacity:1} 35%{transform:translate(calc(var(--dx) * 0.7),calc(var(--dy) * 0.5)) rotate(240deg);opacity:1} 100%{transform:translate(var(--dx),calc(var(--dy) + 74px)) rotate(560deg);opacity:0} }
+        @keyframes traceFade { 0%{opacity:0.95; filter:brightness(1.4)} 70%{opacity:0.55} 100%{opacity:0} }
         @keyframes smokeRise { 0%{transform:translateY(0) scale(.6);opacity:1} 100%{transform:translateY(-66px) scale(1.5);opacity:0} }
         @keyframes scareJump { 0%,100%{transform:translate(-50%,-50%)} 20%{transform:translate(calc(-50% - 7px),-50%)} 45%{transform:translate(calc(-50% + 7px),-50%)} 70%{transform:translate(calc(-50% - 4px),-50%)} }
         @keyframes escapeFloat { 0%{transform:translate(-50%,-50%);opacity:1} 100%{transform:translate(-50%,-50%) translateY(-54px) scale(1.12);opacity:0} }
@@ -538,7 +577,7 @@ export const BalloonPartyGame: React.FC<BaseGameProps> = ({ onEarnCoins, onBack 
                   )}
                   {/* 球体（大字母在正面中央） */}
                   <div
-                    className={`relative w-[52px] h-[62px] md:w-[58px] md:h-[68px] rounded-[50%] flex items-center justify-center border-[3px] ${
+                    className={`relative w-[62px] h-[72px] md:w-[68px] md:h-[78px] rounded-[50%] flex items-center justify-center border-[3px] ${
                       b.kind === 'bomb'
                         ? 'border-[#55556A] bg-[radial-gradient(circle_at_32%_28%,#6B6B7A,#3A3A48_55%,#1E1E2A)]'
                         : isGold
@@ -548,7 +587,7 @@ export const BalloonPartyGame: React.FC<BaseGameProps> = ({ onEarnCoins, onBack 
                     style={b.kind === 'bomb' || isGold ? undefined : { background: `radial-gradient(circle at 32% 28%, #ffffffb3, ${b.color} 62%)` }}
                   >
                     <span
-                      className={`font-mono font-black text-2xl md:text-[28px] drop-shadow ${
+                      className={`font-mono font-black text-3xl md:text-4xl drop-shadow ${
                         b.kind === 'bomb' ? 'text-[#FF8787]' : isGold ? 'text-[#7A4A00]' : 'text-white'
                       }`}
                     >
@@ -568,6 +607,24 @@ export const BalloonPartyGame: React.FC<BaseGameProps> = ({ onEarnCoins, onBack 
                   <div className="w-[15px] h-[26px] border-l-2 border-b-2 rounded-bl-[0.8rem]" style={{ borderColor: 'rgba(91,70,54,0.4)' }} />
                 </div>
               </div>
+            );
+          })}
+
+          {/* 枪口弹道痕迹（金白色光线射向气球） */}
+          {traces.map(t => {
+            const len = Math.hypot(t.x2 - t.x1, t.y2 - t.y1);
+            const ang = (Math.atan2(t.y2 - t.y1, t.x2 - t.x1) * 180) / Math.PI;
+            return (
+              <div key={t.id}
+                className="absolute z-40 pointer-events-none origin-left rounded-full"
+                style={{
+                  left: t.x1, top: t.y1, width: len, height: 3.5,
+                  transform: `rotate(${ang}deg)`,
+                  background: 'linear-gradient(90deg, rgba(255,201,77,0) 0%, rgba(255,201,77,0.95) 26%, #FFFFFF 100%)',
+                  boxShadow: '0 0 6px rgba(255,201,77,0.8)',
+                  animation: 'traceFade 0.24s ease-out forwards',
+                }}
+              />
             );
           })}
 

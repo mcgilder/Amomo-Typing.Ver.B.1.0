@@ -9,6 +9,7 @@ export enum Tab {
   GAME = 'GAME',
   STORY = 'STORY',
   PET = 'PET',
+  HABIT = 'HABIT',
   STATS = 'STATS'
 }
 
@@ -121,5 +122,15 @@ export interface Achievement {
   unlockedAt?: string;
   progress: number;
   maxProgress: number;
+}
+
+// 每日好习惯（孩子定目标，家长定分值，按日期登记）
+export interface HabitItem {
+  id: string;
+  name: string;            // 习惯名称
+  emoji: string;           // 图标
+  targetPerDay: number;    // 每日目标次数
+  pointsPerTime: number;   // 每次登记得分（家长设置）
+  records: Record<string, number>; // 'YYYY-MM-DD' -> 当日完成次数
 }
 

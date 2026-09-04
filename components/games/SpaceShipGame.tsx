@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { playSoundEffect } from '../../utils';
 import {
-  BaseGameProps, GameItem, useWordPool, useKeyDown, useRafLoop, useFloatScores,
-  TypedWord, ResultModal, GameHeader, GameBoard, BackButton, ScorePill, ComboFlame, calcStars,
+  BaseGameProps, GameItem, useWordPool, useKeyDown, useRafLoop, useFloatScores, useDifficulty, speakGameWord,
+  ResultModal, GameHeader, GameBoard, BackButton, ScorePill, ComboFlame, TypedWord, calcStars,
 } from './shared';
 
 // ============ 🚀 星际护卫队 · 太空射击（陨石真·下坠版） ============
@@ -19,8 +19,9 @@ import {
 const SURVIVE_SEC = 150;   // 坚持到最后即通关
 const SHIELD_MAX = 3;      // 护盾格数
 const BOSS_EVERY = 8;      // 每完成 8 个单词来一个 BOSS
-const DEAD_LINE = 296;     // 陨石越过此高度 = 撞上防线（护盾-1）
-const SHIP_NOSE = 300;     // 飞船炮口高度（激光起点）
+const BOARD_H = 560;       // 竖版战场高度（纵向视野更长，反应时间更充裕）
+const DEAD_LINE = 460;     // 陨石越过此高度 = 撞上防线（护盾-1）
+const SHIP_NOSE = 452;     // 飞船炮口高度（激光起点）
 
 interface Meteor {
   id: number;
@@ -55,7 +56,8 @@ const wordOf = (m: Meteor): GameItem => (m.isBoss && m.bossItems ? m.bossItems[m
 // 星空（三层视差 + 曲速拉丝）
 interface StarDot { x: number; y: number; size: number; dur: number; delay: number; }
 
-export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onBack }) => {
+export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onBack, difficulty }) => {
+  const { speedMul, timeMul } = useDifficulty(difficulty); // 难度：陨石下坠速度与生成节奏
   const pickWord = useWordPool(wordList);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -118,7 +120,7 @@ export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
     if (isBoss) {
       meteorsRef.current.push({
         id, item: main, bossItems: [pickWord(), pickWord()], wordIndex: 0, typed: '',
-        baseX: 50, xPct: 50, y: -120, vy: 0.026,
+        baseX: 50, xPct: 50, y: -120, vy: 0.034 * speedMul,
         swayAmp: 1.6, swayPhase: Math.random() * Math.PI * 2, swaySpeed: 0.0009, isBoss: true,
       });
       playSoundEffect('bell', 0.3);
@@ -129,7 +131,7 @@ export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
       meteorsRef.current.push({
         id, item: main, wordIndex: 0, typed: '',
         baseX: x, xPct: x, y: -85,
-        vy: 0.038 + diff * 0.018 + Math.random() * 0.012, // 约 38~68 px/s：6~9.5 秒坠底
+        vy: (0.038 + diff * 0.018 + Math.random() * 0.012) * speedMul, // 难度越低坠得越慢
         swayAmp: 2 + Math.random() * 2.5,
         swayPhase: Math.random() * Math.PI * 2,
         swaySpeed: 0.0012 + Math.random() * 0.0009,
@@ -209,6 +211,7 @@ export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
 
   // ---------- 单词完成 ----------
   const completeWordOn = useCallback((m: Meteor) => {
+    speakGameWord(wordOf(m)); // 打完单词语音朗读
     const nc = combo + 1;
     let gained = (10 + nc * 2) * (m.isBoss ? 3 : 1);
     if (warpMsRef.current > 0) gained *= 2;
@@ -238,7 +241,7 @@ export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
       if (m.isBoss) {
         spawnStarRain();
         playSoundEffect('sparkle', 0.35);
-        spawnCdRef.current = 800; // BOSS 战后快点恢复节奏
+        spawnCdRef.current = 800 * timeMul; // BOSS 战后快点恢复节奏
       }
     }
   }, [combo, onEarnCoins, addScore, fireLaser, explodeAt, spawnStarRain, triggerWarp, lockedId, boardW]);
@@ -282,7 +285,7 @@ export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
         const regular = list.filter(m => !m.isBoss).length;
         if (regular < 2 && spawnCdRef.current <= 0) {
           spawnMeteor(false);
-          spawnCdRef.current = 2800 + Math.random() * 1600;
+          spawnCdRef.current = (2800 + Math.random() * 1600) * timeMul;
         }
       }
     }
@@ -371,7 +374,7 @@ export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
     meteorsRef.current = [];
     elapsedMsRef.current = 0;
     warpMsRef.current = 0;
-    spawnCdRef.current = 1200;
+    spawnCdRef.current = 1200 * timeMul;
     bossWarnMsRef.current = -1;
     wordsDoneRef.current = 0;
     setLockedId(null); setShield(SHIELD_MAX); setScore(0);
@@ -390,8 +393,8 @@ export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
       <style>{`
         @keyframes fragFly { from { transform: translate(0,0) rotate(0deg) scale(1); opacity: 1; } to { transform: translate(var(--dx), var(--dy)) rotate(220deg) scale(0.25); opacity: 0; } }
         @keyframes laserShot { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-        @keyframes warpStreak { from { transform: translateY(-90px); } to { transform: translateY(520px); } }
-        @keyframes starFall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 88% { opacity: 1; } 100% { transform: translateY(470px) rotate(420deg); opacity: 0; } }
+        @keyframes warpStreak { from { transform: translateY(-90px); } to { transform: translateY(650px); } }
+        @keyframes starFall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 88% { opacity: 1; } 100% { transform: translateY(600px) rotate(420deg); opacity: 0; } }
         @keyframes redFlash { from { opacity: 0.6; } to { opacity: 0; } }
         @keyframes bossWarn { 0%, 100% { opacity: 0.4; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.05); } }
       `}</style>
@@ -404,7 +407,7 @@ export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
       </GameHeader>
 
       <GameBoard
-        className="h-[430px]"
+        className="h-[560px] max-w-2xl mx-auto w-full"
         style={{ background: 'linear-gradient(180deg, #0B1026 0%, #141B3C 55%, #1B2447 100%)' }}
         shake={shakeTick > 0}
       >
@@ -467,7 +470,7 @@ export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
                     {isTarget && <div className="absolute -inset-2 rounded-[2.6rem] border-4 border-[#FFC94D] animate-pulse" />}
                   </div>
                   <div className="mt-1.5 bg-white/95 rounded-xl px-3 py-1 shadow-lg">
-                    <TypedWord word={m.word.typing} typedLen={m.typed.length} size="sm" />
+                    <TypedWord word={m.word.typing} typedLen={m.typed.length} size="md" />
                   </div>
                 </div>
               ) : (
@@ -491,7 +494,7 @@ export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
                     {isTarget && <div className="absolute -inset-1.5 rounded-full border-4 border-[#FFC94D] animate-pulse" />}
                   </div>
                   <div className="mt-1 bg-white/95 rounded-xl px-2.5 py-0.5 shadow-lg">
-                    <TypedWord word={m.word.typing} typedLen={m.typed.length} size="sm" />
+                    <TypedWord word={m.word.typing} typedLen={m.typed.length} size="md" />
                   </div>
                 </div>
               )}
@@ -573,17 +576,6 @@ export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
         )}
 
         <ScoreLayer />
-
-        {/* 当前目标大字 */}
-        {target && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 bg-white/95 rounded-2xl border-3 px-5 py-2 shadow-[0_4px_0_rgba(0,0,0,0.25)] flex flex-col items-center min-w-[230px]" style={{ borderColor: target.isBoss ? '#A57DE0' : '#4FB8E7' }}>
-            <TypedWord word={target.word.typing} typedLen={target.typed.length} size="lg" />
-            <span className="text-xs font-bold text-[#8A6F5C] font-kids flex items-center gap-1.5">
-              {target.isBoss && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#F3E8FF] text-[#8258C7] border border-[#D9C2F5]">BOSS {target.wordIndex + 1}/2</span>}
-              {target.word.display}
-            </span>
-          </div>
-        )}
 
         {finished && (
           <ResultModal

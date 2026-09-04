@@ -543,14 +543,26 @@ export const FrogMazeGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, o
             );
           })}
 
-          {/* 妈妈青蛙 + 加油气泡 */}
+          {/* 妈妈青蛙 + 加油气泡（更大只 + 荷叶花帽 + 妈妈徽章，一眼与小青蛙区分） */}
           {mamaPad && (
             <>
               <div className="absolute z-20 select-none pointer-events-none"
                 style={{ left: `${mamaPad.x}%`, top: mamaPad.y, transform: 'translate(-50%, -132%)' }}>
                 <div className="relative animate-float-y">
-                  <span className="text-4xl drop-shadow-[0_3px_5px_rgba(0,0,0,0.4)]">🐸</span>
-                  <span className="absolute -top-2 -right-3 text-xl">👒</span>
+                  <div className="relative" style={{ transform: 'scale(1.32)', transformOrigin: 'bottom center' }}>
+                    <span className="text-4xl drop-shadow-[0_3px_5px_rgba(0,0,0,0.4)]">🐸</span>
+                    {/* 荷叶小花帽（歪着戴更亲切） */}
+                    <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-2xl select-none" style={{ transform: 'rotate(-14deg)' }}>🪷</span>
+                    {/* 长睫毛 */}
+                    <span className="absolute top-[30%] left-[17%] w-[11px] h-[6px] border-t-[2.5px] border-[#2F5D2A] rounded-t-full" />
+                    <span className="absolute top-[30%] right-[17%] w-[11px] h-[6px] border-t-[2.5px] border-[#2F5D2A] rounded-t-full" />
+                    {/* 害羞腮红 */}
+                    <span className="absolute top-[48%] left-[8%] w-[9px] h-[5px] rounded-full bg-[#FF9FB2]/85" />
+                    <span className="absolute top-[48%] right-[8%] w-[9px] h-[5px] rounded-full bg-[#FF9FB2]/85" />
+                  </div>
+                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-[#FF8FAB] text-white text-[10px] font-black px-2 py-[1px] rounded-full border-2 border-white shadow whitespace-nowrap select-none">
+                    妈妈
+                  </div>
                 </div>
               </div>
               <div className="absolute z-20 pointer-events-none"

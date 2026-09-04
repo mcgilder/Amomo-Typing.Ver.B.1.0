@@ -1,14 +1,15 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { playSoundEffect } from '../../utils';
 import {
-  BaseGameProps, GameItem, useWordPool, useKeyDown, useRafLoop,
+  BaseGameProps, GameItem, useWordPool, useKeyDown, useRafLoop, useDifficulty,
   TypedWord, ScorePill, ComboFlame, useFloatScores,
-  ResultModal, GameHeader, GameBoard, BackButton, calcStars
+  ResultModal, GameHeader, GameBoard, BackButton, calcStars, speakGameWord
 } from './shared';
 
-// ============ 🏎️ 彩虹大冲刺 · 横版竞速打字（60fps rAF 版） ============
-// 玩法：侧视横版赛道，敲对路牌单词点燃氮气狂飙！
-// ↑↓ 键换道躲油桶，1000 米终点前超越兔子车手！
+// ============ 🏎️ 闪避赛车 · 横版竞速打字（60fps rAF 版） ============
+// 玩法：侧视横版赛道，单词热气球飞进来悬在上空，敲完单词点燃氮气狂飙！
+// ↑↓ 键换道躲油桶（每 1~2 词一个油桶），1000 米终点前追上蓝色对手车！
+// 对手会"动态追逐"：你打字快它就放慢等你追，你停手它就渐渐提速甩开你。
 // （铁律：方向键只管移动，字母键只管打字）
 //
 // 帧率方案（10fps → 60fps）：
@@ -20,9 +21,11 @@ import {
 //    彻底消灭 CSS animation-duration 实时改值造成的跳帧。
 
 const RACE_LENGTH = 1000;    // 终点里程（米）
-const BASE_SPEED = 42;        // 基础巡航 km/h（不敲字会输给兔子！）
+const BASE_SPEED = 42;        // 基础巡航 km/h（不敲字会输给对手！）
 const NITRO_SPEED = 115;      // 氮气狂飙 km/h
-const OPPONENT_SPEED = 50;    // 兔子车手均速 km/h
+const OPP_BASE = 50;          // 对手蓝车基础均速 km/h
+const OPP_MIN = 34;           // 刚打完词：对手放慢到这个速度（让你追上）
+const OPP_MAX = 80;           // 一直不打：对手渐渐提速上限（紧迫感）
 const CAR_X = 25;             // 玩家固定屏幕横向位置（%）
 const METER_PCT = 0.35;       // 世界比例：每米 = 屏幕宽的 0.35%
 
@@ -53,15 +56,18 @@ interface World {
   oppPos: number;      // 对手里程（米）
   speed: number;       // 当前速度
   targetSpeed: number; // 目标速度
+  oppSpeed: number;    // 对手当前速度（动态追逐）
   oppT: number;        // 对手速度波动时钟（原 100ms tick 数）
   barrels: Barrel[];
   wordsDone: number;   // 已敲完单词数
-  nextBarrelAt: number;// 下次生成油桶的词数阈值（2~3 词一个）
+  nextBarrelAt: number;// 下次生成油桶的词数阈值（1~2 词一个）
+  signX: number;       // 单词热气球横向位置（%）：从右侧飞入悬停
 }
 
 const freshWorld = (): World => ({
   position: 0, oppPos: 0, speed: BASE_SPEED, targetSpeed: BASE_SPEED,
-  oppT: 0, barrels: [], wordsDone: 0, nextBarrelAt: 2 + Math.floor(Math.random() * 2),
+  oppSpeed: OPP_BASE, oppT: 0, barrels: [], wordsDone: 0,
+  nextBarrelAt: 1 + Math.floor(Math.random() * 2), signX: 112,
 });
 
 // 每帧推给 React 的轻量快照（渲染只读它，物理只写 worldRef）
@@ -69,7 +75,9 @@ interface FrameView {
   position: number;
   oppPos: number;
   speed: number;
+  oppSpeed: number;
   barrels: Barrel[];
+  signX: number;
 }
 
 // 远景山峦（慢层）
@@ -91,7 +99,8 @@ const SPEED_STREAKS = [
 ];
 const RIBBONS = [6, 18, 30, 42, 54, 66, 78, 90];
 
-export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onBack }) => {
+export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onBack, difficulty }) => {
+  const { speedMul } = useDifficulty(difficulty); // 难度：对手动态速度基准
   const pickWord = useWordPool(wordList);
   const [sign, setSign] = useState<RoadSign | null>(null);
   const [lane, setLane] = useState<0 | 1 | 2>(1);
@@ -103,7 +112,7 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
   const [crashKey, setCrashKey] = useState(0);
   const [finished, setFinished] = useState(false);
   const [won, setWon] = useState(false);
-  const [view, setView] = useState<FrameView>({ position: 0, oppPos: 0, speed: BASE_SPEED, barrels: [] });
+  const [view, setView] = useState<FrameView>({ position: 0, oppPos: 0, speed: BASE_SPEED, oppSpeed: OPP_BASE, barrels: [], signX: 112 });
   const [roadSize, setRoadSize] = useState({ w: 880, h: 232 });
 
   const { addScore, Layer: ScoreLayer } = useFloatScores();
@@ -113,6 +122,7 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
   const finishedRef = useRef(false);
   const nitroTokenRef = useRef(0);
   const worldRef = useRef<World>(freshWorld());
+  const lastWordAtRef = useRef(Date.now()); // 上次打完单词的时间（对手动态追逐依据）
   // 视差滚动累计位移（px）
   const scrollRef = useRef({ cloud: 0, mountain: 0, roadside: 0, dash: 0 });
   // 四个滚动层的 DOM 直写句柄
@@ -156,8 +166,23 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
     w.speed += (w.targetSpeed - w.speed) * Math.min(1, dt * 0.0022);
     // 玩家前进：km/h → m/ms
     w.position += (w.speed * dt) / 3600;
+
+    // ===== 对手动态追逐 =====
+    // 刚打完词 → 放慢等孩子追上来；停手越久 → 渐渐提速甩开（制造你追我赶的紧张感）
+    const idleMs = Date.now() - lastWordAtRef.current;
+    const oppBaseNow = OPP_BASE * speedMul;
+    let oppTarget: number;
+    if (idleMs < 2600) {
+      oppTarget = oppBaseNow * (OPP_MIN / OPP_BASE);
+    } else {
+      oppTarget = Math.min(oppBaseNow * (OPP_MAX / OPP_BASE), oppBaseNow + (idleMs - 2600) * 0.004 * speedMul);
+    }
+    w.oppSpeed += (oppTarget - w.oppSpeed) * Math.min(1, dt * 0.0006);
     // 对手前进（速度轻微起伏，像真人开车）
-    w.oppPos += (OPPONENT_SPEED * (0.94 + Math.sin(w.oppT / 4) * 0.1) * dt) / 3600;
+    w.oppPos += (w.oppSpeed * (0.94 + Math.sin(w.oppT / 4) * 0.1) * dt) / 3600;
+
+    // 单词热气球：从右侧飞入，悬停在赛道上空
+    if (w.signX > 68) w.signX = Math.max(68, w.signX - dt * 0.03);
 
     // 油桶逼近 + 碰撞（等效原 0.028%/100ms）
     for (let i = w.barrels.length - 1; i >= 0; i--) {
@@ -200,7 +225,7 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
     if (w.oppPos >= RACE_LENGTH) { finishGame(false); return; }
 
     // 轻量帧快照 → 触发渲染
-    setView({ position: w.position, oppPos: w.oppPos, speed: w.speed, barrels: w.barrels.slice() });
+    setView({ position: w.position, oppPos: w.oppPos, speed: w.speed, oppSpeed: w.oppSpeed, barrels: w.barrels.slice(), signX: w.signX });
   }, !finished);
 
   // ====== 敲完一个单词 → 氮气狂飙 ======
@@ -212,9 +237,11 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
     setMaxCombo(m => Math.max(m, nc));
     onEarnCoins?.(3);
     playSoundEffect('car_engine', 0.32);
+    speakGameWord(sign?.item || { typing: '', display: '' }); // 打完单词语音朗读
 
     const w = worldRef.current;
     w.wordsDone += 1;
+    lastWordAtRef.current = Date.now(); // 对手动态追逐：你刚打完词，它就放慢等你
 
     // 氮气：速度115 + 火焰 + 镜头脉冲，持续 1.4 秒
     const token = ++nitroTokenRef.current;
@@ -232,16 +259,23 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
     const board = boardRef.current?.getBoundingClientRect();
     if (board) addScore(board.width * 0.55, board.height * 0.2, `+${gained} ⚡`, '#2E93C4');
 
-    // 每完成 2~3 个单词生成一个油桶障碍
+    // 障碍翻倍：每完成 1~2 个单词就滚出一个油桶（强迫换道闪避）
     if (w.wordsDone >= w.nextBarrelAt) {
-      w.nextBarrelAt = w.wordsDone + 2 + Math.floor(Math.random() * 2);
+      w.nextBarrelAt = w.wordsDone + 1 + Math.floor(Math.random() * 2);
       const bl = Math.floor(Math.random() * 3) as 0 | 1 | 2;
       w.barrels.push({ id: Date.now() + Math.random(), lane: bl, x: 110 });
+      // 三分之一概率再来第二个不同车道的油桶（连环闪避）
+      if (Math.random() < 0.34) {
+        const bl2 = (bl + 1 + Math.floor(Math.random() * 2)) % 3 as 0 | 1 | 2;
+        w.barrels.push({ id: Date.now() + Math.random() + 1, lane: bl2, x: 118 });
+      }
       playSoundEffect('whoosh', 0.14);
     }
 
+    // 新单词：热气球从右侧重新飞入
+    w.signX = 112;
     setSign({ id: Date.now(), item: pickWord(), typed: '' });
-  }, [combo, addScore, onEarnCoins, pickWord]);
+  }, [combo, addScore, onEarnCoins, pickWord, sign]);
 
   // ====== 键盘：↑↓ 只管换道，字母只管打字 ======
   useKeyDown((e) => {
@@ -285,7 +319,7 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
     setLane(1);
     setScore(0); setCombo(0); setMaxCombo(0);
     setNitro(false); setFinished(false); setWon(false); setCrashKey(0);
-    setView({ position: 0, oppPos: 0, speed: BASE_SPEED, barrels: [] });
+    setView({ position: 0, oppPos: 0, speed: BASE_SPEED, oppSpeed: OPP_BASE, barrels: [], signX: 112 });
     setSign({ id: Date.now(), item: pickWord(), typed: '' });
   };
 
@@ -319,9 +353,9 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
         }
       `}</style>
 
-      <GameHeader emoji="🏎️" title="彩虹大冲刺" tag="速度竞速" tagColor="bg-[#E3F2FA] text-[#2E93C4] border-[#BBE2F2]">
+      <GameHeader emoji="🏎️" title="闪避赛车" tag="速度竞速" tagColor="bg-[#E3F2FA] text-[#2E93C4] border-[#BBE2F2]">
         <ScorePill icon="🛣️" label="里程" value={`${Math.floor(view.position)}m`} color="bg-[#E3F2FA] text-[#2E93C4] border-[#BBE2F2]" />
-        <ScorePill icon="⚡" label="时速" value={`${Math.round(view.speed)}`} color="bg-[#FFF3D6] text-[#8A6F00] border-[#FFE3A3]" />
+        <ScorePill icon="⚡" label="时速" value={`${Math.round(view.speed)}`} color="bg-[#FFF3D6] text-[#8A5F00] border-[#FFE3A3]" />
         <ScorePill icon="⭐" label="积分" value={score} />
         <ComboFlame combo={combo} />
       </GameHeader>
@@ -330,16 +364,16 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
       <div className="w-full story-card px-5 py-2.5">
         <div className="flex justify-between text-[11px] font-black text-[#8A6F5C] mb-1">
           <span>🏁 终点 1000m</span>
-          <span>🏎️ {Math.floor(view.position)}m · 🐰 {Math.floor(view.oppPos)}m · {gap >= 0 ? `落后 ${Math.floor(gap)}m` : `领先 ${Math.floor(-gap)}m`}</span>
+          <span>🏎️ {Math.floor(view.position)}m · 🚙 {Math.floor(view.oppPos)}m · {gap >= 0 ? `落后 ${Math.floor(gap)}m` : `领先 ${Math.floor(-gap)}m`}</span>
         </div>
         <div className="relative h-7 bg-[#F5EBDA] rounded-full border-2 border-[#EADBC2] overflow-hidden">
           <div className="absolute inset-y-0 left-0 bg-[repeating-linear-gradient(90deg,#FFF_0px,#FFF_14px,#FFD9E0_14px,#FFD9E0_28px)] opacity-50 w-full" />
           <div
             className="absolute -top-0.5 text-xl z-10 select-none"
-            style={{ left: `calc(${oppPct}% - 12px)` }}
-            title="兔子车手"
+            style={{ left: `calc(${oppPct}% - 12px)`, transform: 'scaleX(-1)' }}
+            title="对手蓝车"
           >
-            🐰
+            🚙
           </div>
           <div
             className="absolute -top-0.5 text-xl z-20 select-none"
@@ -444,18 +478,21 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
                 </div>
               )}
 
-              {/* 对手兔子车：按真实进度在赛道上移动，超车时从右侧掉到左后方 */}
+              {/* 对手蓝车：按真实进度在赛道上移动，超车时从右侧掉到左后方 */}
               {oppVisible && (
                 <div
                   className="absolute z-20 left-0 top-0 will-change-transform"
                   style={{ transform: `translate3d(${oppXpx}px, ${laneY(1)}px, 0) translate(-50%, -50%)` }}
                 >
                   <div className="relative animate-float-y">
-                    <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-2xl select-none z-10">🐰</span>
-                    <div className="text-4xl select-none drop-shadow-lg" style={{ transform: 'scaleX(-1)' }}>🚙</div>
+                    {/* 对手头顶名牌 */}
+                    <div className="absolute -top-7 left-1/2 -translate-x-1/2 text-[11px] font-black text-white bg-[#4FB8E7]/90 px-2 py-0.5 rounded-lg border border-white/60 whitespace-nowrap select-none">
+                      蓝车 · {Math.round(view.oppSpeed)}km/h
+                    </div>
+                    <div className="text-4xl select-none drop-shadow-lg" style={{ transform: 'scaleX(-1)', filter: 'hue-rotate(175deg) saturate(1.35)' }}>🚙</div>
                     <div className="w-12 h-1.5 bg-black/25 rounded-full mx-auto blur-[2px] -mt-1" />
                     {Math.abs(gap) < 70 && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-black text-white bg-[#A57DE0]/90 px-1.5 py-0.5 rounded-lg border border-white/50">
+                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-black text-white bg-[#A57DE0]/90 px-1.5 py-0.5 rounded-lg border border-white/50">
                         {gap > 0 ? `领先你 ${Math.floor(gap)}m` : `落后你 ${Math.floor(-gap)}m`}
                       </div>
                     )}
@@ -511,14 +548,21 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
             </div>
           )}
 
-          {/* ---- 路牌单词（打字目标）：白卡蓝边路牌样式 ---- */}
+          {/* ---- 单词热气球（打字目标）：从右侧飞入赛道上空悬停 ---- */}
           {sign && (
-            <div className="absolute z-40 right-[3%] top-[4%] rotate-2 bg-white rounded-2xl border-4 border-[#4FB8E7] shadow-[0_5px_0_#2E93C4] px-4 py-2 flex flex-col items-center gap-1">
-              <div className="flex items-center gap-1.5">
-                <span className="text-base select-none">🪧</span>
-                <span className="text-xs font-black text-[#5B4636] truncate max-w-[120px]">{sign.item.display}</span>
+            <div
+              className="absolute z-40 top-[5%] will-change-transform"
+              style={{ left: `${view.signX}%`, transform: 'translateX(-50%)' }}
+            >
+              <div className="flex flex-col items-center animate-float-y">
+                {/* 气球本体 */}
+                <span className="text-3xl select-none drop-shadow-md">🎈</span>
+                {/* 吊篮 = 单词牌 */}
+                <div className="bg-white rounded-2xl border-4 border-[#4FB8E7] shadow-[0_5px_0_#2E93C4] px-4 py-1.5 flex flex-col items-center gap-0.5 -mt-1">
+                  <span className="text-[11px] font-black text-[#8A6F5C] truncate max-w-[130px]">{sign.item.display}</span>
+                  <TypedWord word={sign.item.typing} typedLen={sign.typed.length} size="md" />
+                </div>
               </div>
-              <TypedWord word={sign.item.typing} typedLen={sign.typed.length} size="sm" />
             </div>
           )}
 
