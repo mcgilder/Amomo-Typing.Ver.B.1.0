@@ -224,6 +224,36 @@
         .animate-bubble-rise { animation: bubbleRise 1.6s ease-out infinite; }
         .animate-confetti { animation: confettiFall 1.8s ease-in forwards; }
 
+        /* ============ 矮视口无滚动自适应 ============
+           总原则「100% 缩放原生状态无滚动完整展示」的矮分辨率档位：
+           仅当视口高度不足时对 main 内容区按页施加最小必要 zoom，
+           导航栏与右下角宠物挂件保持原始大小；≥1021px 高的
+           1920×1080 基线完全不受影响。
+           zoom 取值 = (视口高 - 导航77px) / 该页最深状态实测高度 */
+        @media (min-height: 821px) and (max-height: 1020px) {
+            /* 1080 屏最大化浏览器窗口（视口约 965px） */
+            main[data-active-tab="PET"]   { zoom: 0.85; }
+            main[data-active-tab="STORY"] { zoom: 0.91; }
+        }
+        @media (min-height: 701px) and (max-height: 820px) {
+            /* 1366×768 全屏视口档 */
+            main[data-active-tab="PRACTICE"] { zoom: 0.93; }
+            main[data-active-tab="GAME"]     { zoom: 0.93; }
+            main[data-active-tab="STORY"]    { zoom: 0.76; }
+            main[data-active-tab="PET"]      { zoom: 0.71; }
+            main[data-active-tab="HABIT"]    { zoom: 0.86; }
+            main[data-active-tab="STATS"]    { zoom: 0.84; }
+        }
+        @media (max-height: 700px) {
+            /* 小笔记本最大化窗口（视口更低时进一步缩放，宁小勿滚） */
+            main[data-active-tab="PRACTICE"] { zoom: 0.84; }
+            main[data-active-tab="GAME"]     { zoom: 0.84; }
+            main[data-active-tab="STORY"]    { zoom: 0.70; }
+            main[data-active-tab="PET"]      { zoom: 0.65; }
+            main[data-active-tab="HABIT"]    { zoom: 0.79; }
+            main[data-active-tab="STATS"]    { zoom: 0.77; }
+        }
+
         /* ============ 宠物互动动作：每种道具一个特征鲜明的小动物动作 ============
            设计原则：动作轨迹/幅度/节奏互不重复，一眼能看出"在干什么"
            · 小饼干 petEatCookie   —— 低头小口啃咬（连续啄食+微转）

@@ -635,7 +635,7 @@ export const App: React.FC = () => {
       </nav>
 
       {/* Main Container */}
-      <main className="flex-1 p-3 md:p-5 flex flex-col items-center max-w-[1800px] w-full mx-auto">
+      <main data-active-tab={activeTab} className="flex-1 p-3 md:p-5 flex flex-col items-center max-w-[1800px] w-full mx-auto">
         {/* TAB 1: PRACTICE */}
         {activeTab === Tab.PRACTICE && (
           <div className="w-full flex flex-col items-center gap-4 animate-fade-in">
