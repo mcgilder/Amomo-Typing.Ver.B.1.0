@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Mode, Tab, TypingStats, ExerciseItem, PetItem, PetAccessory, PetTool, Achievement } from './types';
 import { TEXTBOOK_RESOURCES, KEYBOARD_LAYOUT } from './constants';
-import { EN_EXAMPLE_ZH } from './enExampleZh';
 import {
   speakDirect,
   prewarmSpeech,
@@ -25,6 +24,9 @@ const LOCAL_STORAGE_KEY_PETS = 'amomo_typing_pets_v2';
 const LOCAL_STORAGE_KEY_COINS = 'amomo_typing_coins_v2';
 const LOCAL_STORAGE_KEY_ACC = 'amomo_typing_accessories_v2';
 const LOCAL_STORAGE_KEY_ACHIEVEMENTS = 'amomo_typing_achievements_v2';
+// 应用名称（首页标题可自定义，存档在 localStorage）
+const LOCAL_STORAGE_KEY_APP_NAME = 'amomo_typing_appname_v2';
+const DEFAULT_APP_NAME = '阿墨墨打字通';
 
 // 旧版存档升级：补齐新字段
 const normalizePets = (pets: PetItem[]): PetItem[] =>
@@ -46,6 +48,31 @@ export const App: React.FC = () => {
   const [isWaitingForSpace, setIsWaitingForSpace] = useState(false);
   // 根容器引用：自动聚焦，保证进入练习页后直接敲键盘就能输入（无需先点击页面）
   const rootRef = useRef<HTMLDivElement>(null);
+
+  // 首页应用名称：可点击 ✏️ 修改，存档 localStorage，浏览器标签页标题同步
+  const [appName, setAppName] = useState<string>(() => {
+    try { return localStorage.getItem(LOCAL_STORAGE_KEY_APP_NAME) || DEFAULT_APP_NAME; } catch { return DEFAULT_APP_NAME; }
+  });
+  const [editingAppName, setEditingAppName] = useState(false);
+  const [appNameDraft, setAppNameDraft] = useState('');
+
+  useEffect(() => {
+    document.title = `${appName} - 快乐学打字`;
+  }, [appName]);
+
+  const confirmAppName = () => {
+    const t = appNameDraft.trim();
+    const finalName = t || DEFAULT_APP_NAME;   // 空名回退默认，避免标题消失
+    setAppName(finalName);
+    try { localStorage.setItem(LOCAL_STORAGE_KEY_APP_NAME, finalName); } catch { /* ignore */ }
+    setEditingAppName(false);
+    playSoundEffect('victory');
+  };
+  const startEditAppName = () => {
+    setAppNameDraft(appName);
+    setEditingAppName(true);
+    playSoundEffect('click');
+  };
 
   // Custom Practice/Story title
   const [customPracticeTitle, setCustomPracticeTitle] = useState<string>('');
@@ -348,6 +375,9 @@ export const App: React.FC = () => {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // 输入控件（改名框等）里敲键盘不算打字练习
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
       if (!isStarted || activeTab !== Tab.PRACTICE) return;
 
       if (isWaitingForSpace) {
@@ -588,7 +618,48 @@ export const App: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black tracking-tight font-kids">阿墨墨打字通</h1>
+              {editingAppName ? (
+                <input
+                  autoFocus
+                  value={appNameDraft}
+                  onChange={(e) => setAppNameDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); confirmAppName(); }
+                    if (e.key === 'Escape') { e.preventDefault(); setEditingAppName(false); }
+                  }}
+                  maxLength={20}
+                  placeholder={DEFAULT_APP_NAME}
+                  className="text-2xl font-black tracking-tight font-kids bg-white text-[#5B4636] border-3 border-[#FFC94D] focus:outline-none focus:ring-4 focus:ring-[#FFC94D]/50 rounded-xl px-2 py-0 w-[13ch]"
+                />
+              ) : (
+                <h1 className="text-2xl font-black tracking-tight font-kids">{appName}</h1>
+              )}
+              {editingAppName ? (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={confirmAppName}
+                    className="w-6 h-6 rounded-lg bg-[#6BCB77] text-white text-xs font-black flex items-center justify-center shadow-[0_2px_0_#48A757] transition-transform active:scale-90"
+                    title="保存名称（回车）"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    onClick={() => setEditingAppName(false)}
+                    className="w-6 h-6 rounded-lg bg-[#F5EBDA] text-[#8A6F5C] text-xs font-black flex items-center justify-center transition-transform active:scale-90"
+                    title="取消（Esc）"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={startEditAppName}
+                  className="w-6 h-6 rounded-lg bg-[#FFF3D6] hover:bg-[#FFE3A3] text-[#8A5F00] text-xs flex items-center justify-center border border-[#FFE3A3] transition-all active:scale-90"
+                  title="修改名称"
+                >
+                  ✏️
+                </button>
+              )}
               <span className="bg-[#FFF3D6] text-[#8A5F00] text-[10px] font-black px-2 py-0.5 rounded-full border-2 border-[#FFE3A3]">
                 儿童护眼专属
               </span>
@@ -795,9 +866,17 @@ export const App: React.FC = () => {
                             });
                           })()}
                         </div>
+
+                        {/* 例句与打字内容同框展示（紧随拼音行下方） */}
+                        {exerciseList[currentIndex]?.example && (
+                          <p className="mt-2 text-2xl md:text-3xl text-[#48A757] font-black font-kids text-center leading-snug select-none">
+                            {exerciseList[currentIndex]?.example}
+                          </p>
+                        )}
                       </>
                     ) : (
-                      /* English Mode with Syllable Colors（单词与键盘同列居中） */
+                      /* English Mode with Syllable Colors（单词与键盘同列居中，音标与例句在内容下方） */
+                      <div className="flex flex-col items-center gap-1.5 w-full">
                       <div className="flex flex-wrap justify-center items-end gap-x-2 gap-y-3">
                         {(() => {
                           let charCounter = 0;
@@ -852,17 +931,23 @@ export const App: React.FC = () => {
                           });
                         })()}
                         {exerciseList[currentIndex]?.phonetic && (
-                          <span className="pb-2 text-base md:text-xl italic font-mono text-[#8A6F5C] select-none whitespace-nowrap">
+                          <span className="text-2xl md:text-3xl italic font-mono font-bold text-[#8A6F5C] select-none whitespace-nowrap leading-none">
                             {exerciseList[currentIndex]?.phonetic}
                           </span>
                         )}
+                        {exerciseList[currentIndex]?.example && (
+                          <p className="mt-1 text-2xl md:text-3xl text-[#48A757] font-black italic font-kids text-center leading-snug select-none">
+                            {exerciseList[currentIndex]?.example}
+                          </p>
+                        )}
+                      </div>
                       </div>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* 行1-右：翻译与例句信息卡（打字内容的右边） */}
+              {/* 行1-右：翻译信息卡（例句已并入左侧打字卡） */}
               <div className="lg:col-span-4 story-card px-4 py-4 flex flex-col items-center justify-center gap-2.5 text-center min-h-[150px] lg:min-h-0">
                 {!isStarted ? (
                   <div className="flex flex-col items-center gap-2 text-[#8A6F5C]">
@@ -871,53 +956,34 @@ export const App: React.FC = () => {
                       点击「开始练习」<br />跟着键盘高亮提示敲字母
                     </p>
                   </div>
-                ) : isWaitingForSpace ? (
-                  <div className="flex flex-col items-center animate-fade-in w-full">
-                    <p className="text-base md:text-xl text-[#48A757] font-black italic leading-snug font-kids">
-                      "{exerciseList[currentIndex]?.example}"
-                    </p>
-                    {mode === Mode.ENGLISH && EN_EXAMPLE_ZH[exerciseList[currentIndex]?.example || ''] && (
-                      <p className="text-xs md:text-sm text-[#8A6F5C] font-bold mb-2">
-                        {EN_EXAMPLE_ZH[exerciseList[currentIndex]!.example]}
-                      </p>
-                    )}
-                    <div className="bg-[#FFF3D6] text-[#8A5F00] border-3 border-[#FFE3A3] px-4 py-1.5 rounded-full text-xs md:text-sm font-black animate-pulse flex items-center gap-2 mt-1">
-                      <span>⌨️</span> 按下 [ 空格键 ] 挑战下一个
-                    </div>
-                  </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-2 w-full">
+                  <div className="flex flex-col items-center gap-2.5 w-full">
                     {mode === Mode.ENGLISH && (
-                      <>
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-2xl md:text-3xl font-black text-[#2E93C4] font-kids">
-                            {exerciseList[currentIndex]?.translation}
-                          </span>
-                          <button
-                            onClick={() => readCurrentItem(exerciseList[currentIndex])}
-                            className="w-9 h-9 bg-[#E3F2FA] hover:bg-[#BBE2F2] text-[#2E93C4] rounded-full flex items-center justify-center text-sm transition-transform active:scale-90 border-2 border-[#BBE2F2]"
-                            title="重听单词发音"
-                          >
-                            🔊
-                          </button>
-                        </div>
-                        <p className="text-xs md:text-sm text-[#8A6F5C] font-bold leading-snug px-1">
-                          {exerciseList[currentIndex]?.example}
-                        </p>
-                      </>
-                    )}
-                    {mode === Mode.CHINESE && (
-                      <>
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-2xl md:text-3xl font-black text-[#2E93C4] font-kids">
+                          {exerciseList[currentIndex]?.translation}
+                        </span>
                         <button
                           onClick={() => readCurrentItem(exerciseList[currentIndex])}
-                          className="text-xs bg-[#E5F6EC] hover:bg-[#C8EED4] text-[#357F43] px-3 py-1 rounded-full font-bold transition-all flex items-center gap-1 border-2 border-[#C8EED4]"
+                          className="w-9 h-9 bg-[#E3F2FA] hover:bg-[#BBE2F2] text-[#2E93C4] rounded-full flex items-center justify-center text-sm transition-transform active:scale-90 border-2 border-[#BBE2F2]"
+                          title="重听单词发音"
                         >
-                          <span>🔊 点击朗读读音</span>
+                          🔊
                         </button>
-                        <p className="text-sm md:text-base text-[#8A6F5C] font-bold leading-snug px-1">
-                          {exerciseList[currentIndex]?.example}
-                        </p>
-                      </>
+                      </div>
+                    )}
+                    {mode === Mode.CHINESE && (
+                      <button
+                        onClick={() => readCurrentItem(exerciseList[currentIndex])}
+                        className="text-xs bg-[#E5F6EC] hover:bg-[#C8EED4] text-[#357F43] px-3 py-1 rounded-full font-bold transition-all flex items-center gap-1 border-2 border-[#C8EED4]"
+                      >
+                        <span>🔊 点击朗读读音</span>
+                      </button>
+                    )}
+                    {isWaitingForSpace && (
+                      <div className="bg-[#FFF3D6] text-[#8A5F00] border-3 border-[#FFE3A3] px-4 py-1.5 rounded-full text-xs md:text-sm font-black animate-pulse flex items-center gap-2">
+                        <span>⌨️</span> 按下 [ 空格键 ] 挑战下一个
+                      </div>
                     )}
                   </div>
                 )}

@@ -479,12 +479,12 @@ export const FrogMazeGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, o
             const isDead = pad.dead || pad.nextIds.length === 0;
             const deadSeen = isDead && visitedHere;
 
-            let padCls = 'w-[66px] h-[56px] bg-gradient-to-b from-[#8FE398] to-[#4CAF6D] border-[#CFF5D8]';
-            if (isMama) padCls = 'w-[76px] h-[62px] bg-gradient-to-b from-[#FFC1D0] to-[#E87FA0] border-[#FFE3EC]';
-            if (visitedHere && !isCurrent && !deadSeen) padCls = 'w-[66px] h-[56px] bg-gradient-to-b from-[#5FBF7A] to-[#2E7D4A] border-[#8FD8A8]'; // 走过的深绿
-            if (deadSeen) padCls = 'w-[66px] h-[56px] bg-gradient-to-b from-[#93B49B] to-[#5F8268] border-[#B7D3C0]'; // 死路灰绿
-            if (isCand && !isSel) padCls = 'w-[66px] h-[56px] bg-gradient-to-b from-[#D6F8DB] to-[#9BE8A8] border-[#F0FFF2]'; // 可选浅绿
-            if (isCurrent) padCls = 'w-[72px] h-[60px] bg-gradient-to-b from-[#A5F0AD] to-[#3FA866] border-[#FFF3C9] shadow-[0_0_18px_rgba(255,224,130,0.8)]'; // 当前亮绿
+            let padCls = 'w-[76px] h-[62px] bg-gradient-to-b from-[#8FE398] to-[#4CAF6D] border-[#CFF5D8]';
+            if (isMama) padCls = 'w-[84px] h-[68px] bg-gradient-to-b from-[#FFC1D0] to-[#E87FA0] border-[#FFE3EC]';
+            if (visitedHere && !isCurrent && !deadSeen) padCls = 'w-[76px] h-[62px] bg-gradient-to-b from-[#5FBF7A] to-[#2E7D4A] border-[#8FD8A8]'; // 走过的深绿
+            if (deadSeen) padCls = 'w-[76px] h-[62px] bg-gradient-to-b from-[#93B49B] to-[#5F8268] border-[#B7D3C0]'; // 死路灰绿
+            if (isCand && !isSel) padCls = 'w-[76px] h-[62px] bg-gradient-to-b from-[#D6F8DB] to-[#9BE8A8] border-[#F0FFF2]'; // 可选浅绿
+            if (isCurrent) padCls = 'w-[82px] h-[66px] bg-gradient-to-b from-[#A5F0AD] to-[#3FA866] border-[#FFF3C9] shadow-[0_0_18px_rgba(255,224,130,0.8)]'; // 当前亮绿
 
             const wordColor = isMama
               ? 'text-white/95'
@@ -532,9 +532,9 @@ export const FrogMazeGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, o
                   {isMama && (
                     <span className="absolute -bottom-4 text-[9px] font-black text-white/75 whitespace-nowrap select-none">妈妈在这里</span>
                   )}
-                  {/* 荷叶上的单词（小字，选中后顶部大字显示；当前荷叶由青蛙占位） */}
+                  {/* 荷叶上的单词（放大1.5倍：9px→13px；选中后顶部大字显示；当前荷叶由青蛙占位） */}
                   {!isCurrent && (
-                    <span className={`font-mono font-black text-[9px] leading-none max-w-[58px] truncate px-0.5 ${wordColor}`}>
+                    <span className={`font-mono font-black text-[13px] leading-none max-w-[70px] truncate px-0.5 ${wordColor}`}>
                       {pad.item.typing.toLowerCase()}
                     </span>
                   )}

@@ -387,24 +387,27 @@ export const WhackMoleGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
     if (g.over) return;
     if (e.key.length !== 1 || !/[a-z]/i.test(e.key)) return;
     const k = e.key.toLowerCase();
-    const target = activeTargetOf(g);
-    if (!target) return;
-    const need = target.item.typing[target.typed.length]?.toLowerCase();
-    if (!need) return;
-    if (k === need) {
-      playSoundEffect('click', 0.15);
-      target.typed += k;
-      if (target.typed.length >= target.item.typing.length) {
-        resolveMole(target);
-      }
-      rerender();
-    } else {
-      // 错字只清连击，不重罚
+    // 疾风时刻会有两只地鼠同时冒头：字母匹配任意一只"正需要这个字母"的地鼠，
+    // 否则孩子打旧地鼠上的单词会毫无反应（体感 = 加速期没法打字）
+    const primary = activeTargetOf(g);
+    const hit =
+      primary && primary.kind !== 'bomb' && primary.item.typing[primary.typed.length]?.toLowerCase() === k
+        ? primary
+        : g.moles.find(m => m.state === 'up' && m.kind !== 'bomb' && m.item.typing[m.typed.length]?.toLowerCase() === k);
+    if (!hit) {
+      // 错字只清连击，不重罚（炸弹上的字母打了也不算，炸弹等它自己缩回）
       playSoundEffect('error', 0.12);
       if (g.combo > 0) g.combo = 0;
       if (g.frenzy) g.frenzy = false;
       rerender();
+      return;
     }
+    playSoundEffect('click', 0.15);
+    hit.typed += k;
+    if (hit.typed.length >= hit.item.typing.length) {
+      resolveMole(hit);
+    }
+    rerender();
   }, [resolveMole]);
 
   const restart = () => {

@@ -41,8 +41,8 @@ function escapeXml(s: string): string {
   return s.replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c] as string));
 }
 
-// 单次合成：返回 mp3 Buffer
-function synthesize(voice: string, text: string, rate: number): Promise<Buffer> {
+// 单次合成：返回 mp3 Buffer（pitch: 音高微调 Hz，用于分块朗读的语气变化）
+function synthesize(voice: string, text: string, rate: number, pitch: number = 0): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const connectionId = crypto.randomUUID().replace(/-/g, '');
     const url = `${WSS_URL}?TrustedClientToken=${TRUSTED_CLIENT_TOKEN}&Sec-MS-GEC=${secMsGec()}&Sec-MS-GEC-Version=1-143.0.3650.75&ConnectionId=${connectionId}`;
@@ -92,8 +92,9 @@ function synthesize(voice: string, text: string, rate: number): Promise<Buffer> 
       // 2) SSML：换行符转成句号（神经音色会在句号处自然停顿；Edge 接口不支持 <break> 标签）
       const lang = voice.split('-').slice(0, 2).join('-');
       const rateStr = `${rate >= 0 ? '+' : ''}${rate}%`;
+      const pitchStr = `${pitch >= 0 ? '+' : ''}${pitch}Hz`;
       const normalized = text.replace(/\r?\n+/g, '。').replace(/。{2,}/g, '。');
-      const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'><voice name='${voice}'><prosody rate='${rateStr}' pitch='+0Hz'>${escapeXml(normalized)}</prosody></voice></speak>`;
+      const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'><voice name='${voice}'><prosody rate='${rateStr}' pitch='${pitchStr}'>${escapeXml(normalized)}</prosody></voice></speak>`;
       ws.send([
         `X-RequestId:${crypto.randomUUID().replace(/-/g, '')}`,
         'Content-Type:application/ssml+xml',
@@ -136,12 +137,13 @@ export function edgeTtsPlugin(): Plugin {
         const text = (url.searchParams.get('text') || '').slice(0, 600);
         const voice = url.searchParams.get('voice') || 'zh-CN-XiaoxiaoNeural';
         const rate = Number(url.searchParams.get('rate') || '0');
+        const pitch = Number(url.searchParams.get('pitch') || '0');
 
         if (!text) { res.statusCode = 400; res.end('missing text'); return; }
         // 音色白名单校验（防注入）
         if (!/^[a-z]{2}-[A-Z]{2}-[A-Za-z]+Neural$/.test(voice)) { res.statusCode = 400; res.end('bad voice'); return; }
 
-        synthesize(voice, text, Math.max(-50, Math.min(50, rate)))
+        synthesize(voice, text, Math.max(-50, Math.min(50, rate)), Math.max(-50, Math.min(50, pitch)))
           .then(audio => {
             res.setHeader('Content-Type', 'audio/mpeg');
             res.setHeader('Cache-Control', 'no-store');

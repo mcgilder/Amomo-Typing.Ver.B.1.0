@@ -19,7 +19,7 @@ const WATER_Y = 150;      // 水面高度
 const CAT_TOP = 88;       // 猫咪头顶
 const HOOK_X = 33;        // 闲置浮标水平位置（%），目标鱼判定基准
 
-type FishKind = 'small' | 'fat' | 'koi' | 'boot';
+type FishKind = 'small' | 'fat' | 'koi' | 'boot' | 'trash';
 
 interface Fish {
   id: number;
@@ -51,6 +51,7 @@ const KIND_META: Record<FishKind, { emoji: string; size: string; base: number; l
   fat: { emoji: '🐟', size: 'text-5xl', base: 15, label: '胖鱼' },
   koi: { emoji: '🎏', size: 'text-4xl', base: 30, label: '金锦鲤' },
   boot: { emoji: '🥾', size: 'text-4xl', base: 0, label: '旧靴' },
+  trash: { emoji: '🗑️', size: 'text-4xl', base: 0, label: '垃圾' },
 };
 
 export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onBack, difficulty }) => {
@@ -108,14 +109,14 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
   // ---------- 生成：左右两侧随机入场 ----------
   const spawnFish = useCallback((forceKind?: FishKind, side?: 'left' | 'right', xOff = 0) => {
     const roll = Math.random();
-    const kind: FishKind = forceKind ?? (roll < 0.15 ? 'boot' : roll < 0.25 ? 'koi' : roll < 0.53 ? 'fat' : 'small');
+    const kind: FishKind = forceKind ?? (roll < 0.10 ? 'boot' : roll < 0.18 ? 'trash' : roll < 0.27 ? 'koi' : roll < 0.55 ? 'fat' : 'small');
     // 往右游的从左边进（鱼头朝右，emoji 翻转）；往左游的从右边进（鱼头朝左，默认朝向）
     const dir: 1 | -1 = side === 'left' ? 1 : side === 'right' ? -1 : (Math.random() < 0.5 ? 1 : -1);
     const speed = (kind === 'small' ? 8.5 + Math.random() * 2.5
       : kind === 'fat' ? 4.8 + Math.random() * 1.2
       : kind === 'koi' ? 6.5 + Math.random() * 1.7
       : 5.5 + Math.random() * 1.5) * speedMul / 1000;   // %/ms → 难度越低游得越慢
-    const lifeMs = kind === 'boot' ? 13000 + Math.random() * 4000 : 16000 + Math.random() * 6000;
+    const lifeMs = (kind === 'boot' || kind === 'trash') ? 13000 + Math.random() * 4000 : 16000 + Math.random() * 6000;
     const id = Date.now() + Math.random();
     const y = 200 + Math.random() * 150;
     const x = dir > 0 ? -12 - xOff : 112 + xOff;
@@ -163,7 +164,7 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
 
   // ---------- 完成一个单词 → 钓鱼序列（四段动画） ----------
   const completeFish = useCallback((f: Fish) => {
-    const isBoot = f.kind === 'boot';
+    const isJunk = f.kind === 'boot' || f.kind === 'trash';
     const nc = combo + 1;
     const gained = KIND_META[f.kind].base + nc * 2;
 
@@ -171,8 +172,8 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
     setCatching(f.id);
     f.state = 'hooked';
 
-    if (isBoot) {
-      setCombo(0); // 臭靴清连击
+    if (isJunk) {
+      setCombo(0); // 臭靴/垃圾清连击
       playSoundEffect('error', 0.18);
     } else {
       setScore(s => s + gained);
@@ -204,10 +205,10 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
     // 再 0.4s 后：入篓 / 臭气
     t(1040, () => {
       fishRef.current = fishRef.current.filter(x => x.id !== f.id);
-      if (isBoot) {
+      if (isJunk) {
         setStinkTick(k => k + 1);
         playSoundEffect('frog_splash', 0.3);
-        addScore(catLeft + 40, 240, '好臭呀! 💨', '#7A9A3A');
+        addScore(catLeft + 40, 240, f.kind === 'trash' ? '垃圾好臭! 🤢' : '好臭呀! 🤢', '#7A9A3A');
       } else {
         setCaught(c => c + 1);
         setCatJumpTick(k => k + 1);
@@ -249,8 +250,8 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
     }
     if (gone.length) {
       gone.forEach(g => {
-        if (g.kind === 'boot' && g.typed.length === 0) {
-          // 自制力训练：忍住没钓旧靴，奖励！
+        if ((g.kind === 'boot' || g.kind === 'trash') && g.typed.length === 0) {
+          // 自制力训练：忍住没钓垃圾，奖励！
           setScore(s => s + 5);
           addScore(boardW * 0.14, 205, '忍住了 +5', '#48A757');
           playSoundEffect('sparkle', 0.2);
@@ -335,7 +336,7 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
   const lineDy = hook.y - rodTip.y;
   const lineLen = Math.hypot(lineDx, lineDy);
   const lineAng = (Math.atan2(lineDy, lineDx) * 180) / Math.PI;
-  const bootOnField = snap.fish.some(f => f.kind === 'boot' && f.state === 'swim');
+  const junkOnField = snap.fish.some(f => (f.kind === 'boot' || f.kind === 'trash') && f.state === 'swim');
 
   // ---------- 重开 ----------
   const resetGame = useCallback(() => {
@@ -373,6 +374,7 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
         @keyframes catJump { 0% { transform: translateY(0) scale(1); } 35% { transform: translateY(-22px) scale(1.12) rotate(-6deg); } 70% { transform: translateY(1px) scale(0.96); } 100% { transform: translateY(0) scale(1); } }
         @keyframes basketPop { 0% { transform: scale(1); } 45% { transform: scale(1.2) rotate(4deg); } 100% { transform: scale(1); } }
         @keyframes stinkPuff { 0% { opacity: 0; transform: scale(0.4) translateY(0); } 25% { opacity: 0.9; } 100% { opacity: 0; transform: scale(1.6) translateY(-46px); } }
+        @keyframes flyBuzz { 0% { transform: translate(0,0) rotate(0deg); } 25% { transform: translate(7px,-6px) rotate(12deg); } 50% { transform: translate(12px,3px) rotate(-8deg); } 75% { transform: translate(4px,8px) rotate(10deg); } 100% { transform: translate(0,0) rotate(0deg); } }
         @keyframes bobberBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
       `}</style>
 
@@ -473,9 +475,9 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
                 <div className="relative" style={{ animation: f.state === 'swim' ? `fishBob 2.6s ease-in-out ${idx * 0.35}s infinite` : undefined }}>
                   {/* 单词大字牌：白底蓝边圆角，紧贴鱼身下方（字号加大，水中也看得清） */}
                   {f.state === 'swim' && (
-                    <div className={`absolute left-1/2 -translate-x-1/2 top-full -mt-1.5 rounded-xl px-2.5 py-1 shadow-md whitespace-nowrap ${isTarget ? 'border-3 border-[#FFC94D] scale-110 bg-white' : f.kind === 'boot' ? 'bg-[#F0EBE0] border-2 border-[#B8AE9C]' : 'bg-white border-2 border-[#4FB8E7]'}`}>
+                    <div className={`absolute left-1/2 -translate-x-1/2 top-full -mt-1.5 rounded-xl px-2.5 py-1 shadow-md whitespace-nowrap ${isTarget ? 'border-3 border-[#FFC94D] scale-110 bg-white' : (f.kind === 'boot' || f.kind === 'trash') ? 'bg-[#F0EBE0] border-2 border-[#B8AE9C]' : 'bg-white border-2 border-[#4FB8E7]'}`}>
                       <TypedWord word={f.item.typing} typedLen={f.typed.length} size="md" />
-                      {f.kind === 'boot' && <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-black text-[#8A6F5C] bg-[#FFF3D6] rounded-full px-1.5 border border-[#FFE3A3]">别钓!</span>}
+                      {(f.kind === 'boot' || f.kind === 'trash') && <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-black text-[#8A6F5C] bg-[#FFF3D6] rounded-full px-1.5 border border-[#FFE3A3]">别钓!</span>}
                     </div>
                   )}
                   {/* 鱼身：转身翻转（鱼头始终朝游动方向）+ 尾摆 */}
@@ -519,12 +521,19 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
                 </span>
               ))}
             </div>
-            {/* 臭靴臭气 */}
+            {/* 臭臭特效：绿烟 + 苍蝇 + 嫌弃表情（钓到靴子/垃圾时触发） */}
             {stinkTick > 0 && (
-              <div key={stinkTick} className="absolute -top-6 left-8 pointer-events-none">
-                <span className="absolute text-2xl" style={{ animation: 'stinkPuff 1s ease-out forwards' }}>💨</span>
-                <span className="absolute text-xl" style={{ animation: 'stinkPuff 1s ease-out 0.2s forwards' }}>💨</span>
-                <span className="absolute text-2xl" style={{ animation: 'stinkPuff 1s ease-out 0.4s forwards' }}>💨</span>
+              <div key={stinkTick} className="absolute -top-10 -left-6 pointer-events-none w-[150px]">
+                {/* 绿色臭气团（三层错落） */}
+                <span className="absolute text-2xl" style={{ animation: 'stinkPuff 1.3s ease-out forwards' }}>🟢</span>
+                <span className="absolute left-8 -top-2 text-xl opacity-80" style={{ animation: 'stinkPuff 1.3s ease-out 0.15s forwards' }}>💚</span>
+                <span className="absolute left-16 text-2xl opacity-70" style={{ animation: 'stinkPuff 1.3s ease-out 0.3s forwards' }}>🟢</span>
+                <span className="absolute left-4 top-3 text-lg" style={{ animation: 'stinkPuff 1.3s ease-out 0.45s forwards' }}>💨</span>
+                {/* 苍蝇嗡嗡绕圈 */}
+                <span className="absolute left-2 -top-3 text-sm" style={{ animation: 'flyBuzz 0.9s ease-in-out infinite' }}>🪰</span>
+                <span className="absolute left-12 top-4 text-xs" style={{ animation: 'flyBuzz 0.7s ease-in-out 0.2s infinite' }}>🪰</span>
+                {/* 小猫嫌弃：绿脸 + 波泡 */}
+                <span className="absolute left-[74px] -top-7 text-xl" style={{ animation: 'stinkPuff 1.4s ease-out 0.25s forwards' }}>🤢</span>
               </div>
             )}
           </div>
@@ -537,9 +546,9 @@ export const FishingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, on
           )}
 
           {/* ---------- 旧靴警示 ---------- */}
-          {bootOnField && (
+          {junkOnField && (
             <div className="absolute bottom-[74px] left-1/2 -translate-x-1/2 z-30 pointer-events-none">
-              <span className="bg-[#FFF3D6] text-[#B8860B] font-black text-xs px-3 py-1 rounded-full border-2 border-[#FFE3A3] animate-wiggle">🥾 别钓旧靴子，等它游走！</span>
+              <span className="bg-[#FFF3D6] text-[#B8860B] font-black text-xs px-3 py-1 rounded-full border-2 border-[#FFE3A3] animate-wiggle">🥾🗑️ 别钓靴子和垃圾，小猫会嫌臭！</span>
             </div>
           )}
 

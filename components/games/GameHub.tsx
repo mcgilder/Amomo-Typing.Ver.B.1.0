@@ -98,7 +98,13 @@ export const GameHub: React.FC<GameHubProps> = ({ customWordList, customTitle, o
     }
     const langKey = selectedMode === Mode.ENGLISH ? '英语' : '语文';
     const items = TEXTBOOK_RESOURCES[langKey]?.[selectedBook] || [];
-    return items.map(item => ({
+    // 默认乱序随机出词：每次切换课本/模式重新洗牌，玩起来不枯燥
+    const shuffled = [...items];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.map(item => ({
       typing: item.text,
       display: selectedMode === Mode.ENGLISH ? item.text : (item.chinese || item.text)
     }));
@@ -125,37 +131,37 @@ export const GameHub: React.FC<GameHubProps> = ({ customWordList, customTitle, o
       {/* 顶部横幅 */}
       <div className="story-card p-6 flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 flex-wrap">
             <span className="text-4xl animate-float-y select-none">🎮</span>
             <h2 className="text-2xl md:text-3xl font-black text-[#5B4636] font-kids">趣味游戏乐园</h2>
+
+            {/* 难度调节（移到标题右侧）：6 档，默认 3 档（乌龟最慢 → 火箭最快） */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-sm font-black text-[#8A6F5C]">⚡ 游戏难度</span>
+              <div className="flex items-center gap-1 bg-[#FFF8EE] p-1 rounded-2xl border-3 border-[#FFE8C8]">
+                {DIFFICULTY_LEVELS.map(d => (
+                  <button
+                    key={d.level}
+                    onClick={() => changeDifficulty(d.level)}
+                    title={d.hint}
+                    className={`w-8 h-8 rounded-xl text-sm font-black transition-all ${
+                      difficulty === d.level
+                        ? 'bg-[#FF8A5C] text-white shadow-[0_3px_0_#E0633A] scale-110'
+                        : 'text-[#8A6F5C] hover:bg-white'
+                    }`}
+                  >
+                    {d.level}
+                  </button>
+                ))}
+              </div>
+              <span className="text-[13px] font-black text-[#E0633A] bg-[#FFE9E0] px-2.5 py-1 rounded-full border-2 border-[#FFD1BE]">
+                {DIFFICULTY_LEVELS[difficulty - 1].label}
+              </span>
+            </div>
           </div>
-          <p className="text-xs md:text-sm text-[#8A6F5C] font-bold mt-1">
+          <p className="text-xs md:text-sm text-[#8A6F5C] font-bold mt-1.5">
             {customTitle ? `正在使用专属词库：${customTitle}` : '八大游戏边玩边练，每个游戏都赚金币养宠物！'}
           </p>
-
-          {/* 难度调节：6 档，默认 3 档（乌龟最慢 → 火箭最快） */}
-          <div className="flex items-center gap-1.5 mt-3 flex-wrap">
-            <span className="text-xs font-black text-[#8A6F5C]">⚡ 游戏难度</span>
-            <div className="flex items-center gap-1 bg-[#FFF8EE] p-1 rounded-2xl border-3 border-[#FFE8C8]">
-              {DIFFICULTY_LEVELS.map(d => (
-                <button
-                  key={d.level}
-                  onClick={() => changeDifficulty(d.level)}
-                  title={d.hint}
-                  className={`w-7 h-7 rounded-xl text-xs font-black transition-all ${
-                    difficulty === d.level
-                      ? 'bg-[#FF8A5C] text-white shadow-[0_3px_0_#E0633A] scale-110'
-                      : 'text-[#8A6F5C] hover:bg-white'
-                  }`}
-                >
-                  {d.level}
-                </button>
-              ))}
-            </div>
-            <span className="text-[11px] font-black text-[#E0633A] bg-[#FFE9E0] px-2.5 py-1 rounded-full border-2 border-[#FFD1BE]">
-              {DIFFICULTY_LEVELS[difficulty - 1].label}
-            </span>
-          </div>
         </div>
 
         {/* 词库来源选择 */}
@@ -189,13 +195,13 @@ export const GameHub: React.FC<GameHubProps> = ({ customWordList, customTitle, o
               ))}
             </select>
             <span className="text-[10px] text-[#8A6F5C] font-bold text-center">
-              本册词库共 {wordList.length} 词 · 人教版同步
+              乱序随机出词 · 人教版同步
             </span>
           </div>
         )}
       </div>
 
-      {/* 8 个游戏卡片 */}
+      {/* 8 个游戏卡片：图标居左，名称+类型居右利用横向空间 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {GAME_CARDS.map(card => (
           <div
@@ -204,14 +210,16 @@ export const GameHub: React.FC<GameHubProps> = ({ customWordList, customTitle, o
             className="story-card p-5 flex flex-col justify-between gap-3 cursor-pointer hover:-translate-y-1.5 hover:shadow-[0_10px_0_rgba(222,184,135,0.3)] transition-all duration-200 group"
           >
             <div>
-              <div className={`w-16 h-16 rounded-2xl border-3 flex items-center justify-center text-4xl mb-3 group-hover:animate-wiggle shadow-[0_4px_0_rgba(0,0,0,0.07)] ${card.iconBg}`}>
-                {card.emoji}
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`w-14 h-14 rounded-2xl border-3 flex items-center justify-center text-3xl shrink-0 group-hover:animate-wiggle shadow-[0_4px_0_rgba(0,0,0,0.07)] ${card.iconBg}`}>
+                  {card.emoji}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <h3 className="text-base font-black text-[#5B4636] font-kids leading-tight">{card.name}</h3>
+                  <span className="self-start mt-1 text-[10px] font-black text-[#8A6F5C] bg-[#FFF8EE] border-2 border-[#FFE8C8] px-2 py-0.5 rounded-full">{card.tag}</span>
+                </div>
               </div>
-              <h3 className="text-lg font-black text-[#5B4636] font-kids flex items-center gap-2 flex-wrap">
-                {card.name}
-                <span className="text-[9px] font-black text-[#8A6F5C] bg-[#FFF8EE] border-2 border-[#FFE8C8] px-2 py-0.5 rounded-full">{card.tag}</span>
-              </h3>
-              <p className="text-[11px] text-[#8A6F5C] font-bold mt-1.5 leading-relaxed">{card.desc}</p>
+              <p className="text-[15px] md:text-[16px] text-[#8A6F5C] font-bold leading-snug">{card.desc}</p>
             </div>
             <button className={`btn-candy ${card.btnClass} w-full py-2.5 text-xs`}>
               开始冒险 →

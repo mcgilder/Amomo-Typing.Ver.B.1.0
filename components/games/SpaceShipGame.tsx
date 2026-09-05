@@ -75,7 +75,8 @@ export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
   const [won, setWon] = useState(false);
   const [shakeTick, setShakeTick] = useState(0);
   const [flashTick, setFlashTick] = useState(0);
-  const [boardW, setBoardW] = useState(900);
+  const [boardW, setBoardW] = useState(672);
+  const boardElRef = useRef<HTMLDivElement | null>(null);   // 游戏板实测宽度
   const [snap, setSnap] = useState<Snap>({ meteors: [], elapsedMs: 0, warp: false, bossWarn: false });
   const { addScore, Layer: ScoreLayer } = useFloatScores();
 
@@ -89,10 +90,12 @@ export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
   const initedRef = useRef(false);
 
   // ---------- 板宽测量（飘分/translate3d 坐标用） ----------
+  // 注意：必须测游戏板自身（max-w-2xl），不能测外层 max-w-5xl 容器，
+  // 否则右侧陨石的 x 坐标会算出板外，出现"看得见生成、看不见陨石"的 bug
   useEffect(() => {
-    const el = wrapRef.current;
+    const el = boardElRef.current;
     if (!el) return;
-    const update = () => setBoardW(el.clientWidth || 900);
+    const update = () => setBoardW(el.clientWidth || 672);
     update();
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
@@ -411,6 +414,8 @@ export const SpaceShipGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, 
         style={{ background: 'linear-gradient(180deg, #0B1026 0%, #141B3C 55%, #1B2447 100%)' }}
         shake={shakeTick > 0}
       >
+        {/* 游戏板实测宽度锚点（陨石/激光/飘分坐标基准） */}
+        <div ref={boardElRef} className="absolute inset-0 pointer-events-none" />
         {/* 星云色斑 */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute w-64 h-64 rounded-full blur-3xl opacity-25" style={{ background: 'radial-gradient(circle, #A57DE0, transparent 70%)', left: '4%', top: '6%' }} />

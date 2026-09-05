@@ -23,14 +23,14 @@ import {
 const RACE_LENGTH = 1000;    // 终点里程（米）
 const BASE_SPEED = 42;        // 基础巡航 km/h（不敲字会输给对手！）
 const NITRO_SPEED = 115;      // 氮气狂飙 km/h
-const OPP_BASE = 50;          // 对手蓝车基础均速 km/h
-const OPP_MIN = 34;           // 刚打完词：对手放慢到这个速度（让你追上）
-const OPP_MAX = 80;           // 一直不打：对手渐渐提速上限（紧迫感）
+const OPP_BASE = 50;          // 对手蓝车基准速度（实际按橡皮筋动态调整）
 const CAR_X = 25;             // 玩家固定屏幕横向位置（%）
 const METER_PCT = 0.35;       // 世界比例：每米 = 屏幕宽的 0.35%
+const OPP_HEAD_START = 35;    // 对手发车领先优势（米）：开局就在前，你追我赶
 
 // 三条泳道纵向位置（马路容器内 %，中心点）：上 / 中 / 下
-const LANE_IN = [16, 49, 82];
+// 上道从 16% 下移到 19%：避免贴近马路上沿被路肩/圆角裁切遮挡
+const LANE_IN = [19, 50, 81];
 // 近大远小：下道最近最大，上道最远最小
 const LANE_SCALE = [0.82, 1, 1.14];
 
@@ -65,7 +65,7 @@ interface World {
 }
 
 const freshWorld = (): World => ({
-  position: 0, oppPos: 0, speed: BASE_SPEED, targetSpeed: BASE_SPEED,
+  position: 0, oppPos: OPP_HEAD_START, speed: BASE_SPEED, targetSpeed: BASE_SPEED,
   oppSpeed: OPP_BASE, oppT: 0, barrels: [], wordsDone: 0,
   nextBarrelAt: 1 + Math.floor(Math.random() * 2), signX: 112,
 });
@@ -122,7 +122,6 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
   const finishedRef = useRef(false);
   const nitroTokenRef = useRef(0);
   const worldRef = useRef<World>(freshWorld());
-  const lastWordAtRef = useRef(Date.now()); // 上次打完单词的时间（对手动态追逐依据）
   // 视差滚动累计位移（px）
   const scrollRef = useRef({ cloud: 0, mountain: 0, roadside: 0, dash: 0 });
   // 四个滚动层的 DOM 直写句柄
@@ -167,17 +166,15 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
     // 玩家前进：km/h → m/ms
     w.position += (w.speed * dt) / 3600;
 
-    // ===== 对手动态追逐 =====
-    // 刚打完词 → 放慢等孩子追上来；停手越久 → 渐渐提速甩开（制造你追我赶的紧张感）
-    const idleMs = Date.now() - lastWordAtRef.current;
-    const oppBaseNow = OPP_BASE * speedMul;
-    let oppTarget: number;
-    if (idleMs < 2600) {
-      oppTarget = oppBaseNow * (OPP_MIN / OPP_BASE);
-    } else {
-      oppTarget = Math.min(oppBaseNow * (OPP_MAX / OPP_BASE), oppBaseNow + (idleMs - 2600) * 0.004 * speedMul);
-    }
-    w.oppSpeed += (oppTarget - w.oppSpeed) * Math.min(1, dt * 0.0006);
+    // ===== 对手橡皮筋追逐（你追我赶核心）=====
+    // 以玩家实时速度为基准 + 距离差修正：对手领先越多开得越快、落后越多自动放慢，
+    // 全程贴身缠斗——孩子必须持续敲词触发氮气才能完成超越，一停手就被反超
+    const gapM = w.oppPos - w.position;
+    const rubber = Math.max(-0.3, Math.min(0.22, gapM / 900));
+    const baseNow = OPP_BASE * speedMul;
+    let oppTarget = w.speed * (1 + rubber) * 0.96;   // 略慢于玩家同速：氮气期间可以完成超越
+    oppTarget = Math.max(baseNow * 0.6, Math.min(baseNow * 1.5, oppTarget));
+    w.oppSpeed += (oppTarget - w.oppSpeed) * Math.min(1, dt * 0.0012);
     // 对手前进（速度轻微起伏，像真人开车）
     w.oppPos += (w.oppSpeed * (0.94 + Math.sin(w.oppT / 4) * 0.1) * dt) / 3600;
 
@@ -241,7 +238,6 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
 
     const w = worldRef.current;
     w.wordsDone += 1;
-    lastWordAtRef.current = Date.now(); // 对手动态追逐：你刚打完词，它就放慢等你
 
     // 氮气：速度115 + 火焰 + 镜头脉冲，持续 1.4 秒
     const token = ++nitroTokenRef.current;
@@ -259,13 +255,13 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
     const board = boardRef.current?.getBoundingClientRect();
     if (board) addScore(board.width * 0.55, board.height * 0.2, `+${gained} ⚡`, '#2E93C4');
 
-    // 障碍翻倍：每完成 1~2 个单词就滚出一个油桶（强迫换道闪避）
+    // 障碍再翻倍：每完成 1 个单词就滚出油桶（强迫换道闪避）
     if (w.wordsDone >= w.nextBarrelAt) {
-      w.nextBarrelAt = w.wordsDone + 1 + Math.floor(Math.random() * 2);
+      w.nextBarrelAt = w.wordsDone + 1;
       const bl = Math.floor(Math.random() * 3) as 0 | 1 | 2;
       w.barrels.push({ id: Date.now() + Math.random(), lane: bl, x: 110 });
-      // 三分之一概率再来第二个不同车道的油桶（连环闪避）
-      if (Math.random() < 0.34) {
+      // 高概率再来第二个不同车道的油桶（连环闪避，封住"躺赢道"）
+      if (Math.random() < 0.8) {
         const bl2 = (bl + 1 + Math.floor(Math.random() * 2)) % 3 as 0 | 1 | 2;
         w.barrels.push({ id: Date.now() + Math.random() + 1, lane: bl2, x: 118 });
       }
@@ -277,26 +273,37 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
     setSign({ id: Date.now(), item: pickWord(), typed: '' });
   }, [combo, addScore, onEarnCoins, pickWord, sign]);
 
-  // ====== 键盘：↑↓ 只管换道，字母只管打字 ======
+  // ====== 换道：事件期直接由 laneRef 计算目标道并同步（updater 内赋 ref 是渲染期副作用，
+  // ====== React 18 并发模式下可能延迟执行，导致真实键盘偶发"按了没反应"） ======
+  const switchLane = useCallback((dir: -1 | 1) => {
+    const nl = Math.max(0, Math.min(2, laneRef.current + dir)) as 0 | 1 | 2;
+    if (nl === laneRef.current) return;
+    laneRef.current = nl;
+    setLane(nl);
+    playSoundEffect('whoosh', 0.15);
+  }, []);
+
+  // ====== 键盘：↑↓/W/S 换道，字母只管打字 ======
   useKeyDown((e) => {
     if (finishedRef.current) return;
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    const k = e.key;
+    if (k === 'ArrowUp' || k === 'w' || k === 'W') {
       e.preventDefault();
-      setLane(l => {
-        const nl = (e.key === 'ArrowUp' ? Math.max(0, l - 1) : Math.min(2, l + 1)) as 0 | 1 | 2;
-        laneRef.current = nl;
-        return nl;
-      });
-      playSoundEffect('whoosh', 0.15);
+      switchLane(-1);
       return;
     }
-    if (e.key.length === 1 && /[a-z]/i.test(e.key) && sign) {
-      const k = e.key.toLowerCase();
+    if (k === 'ArrowDown' || k === 's' || k === 'S') {
+      e.preventDefault();
+      switchLane(1);
+      return;
+    }
+    if (k.length === 1 && /[a-z]/i.test(k) && sign) {
+      const c = k.toLowerCase();
       const target = sign.item.typing[sign.typed.length]?.toLowerCase();
       if (!target) return;
-      if (k === target) {
+      if (c === target) {
         playSoundEffect('click', 0.16);
-        const nt = sign.typed + k;
+        const nt = sign.typed + c;
         if (nt.length >= sign.item.typing.length) {
           completeWord();
         } else {
@@ -308,7 +315,7 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
         setCombo(0);
       }
     }
-  }, [sign, completeWord]);
+  }, [sign, completeWord, switchLane]);
 
   const restart = () => {
     worldRef.current = freshWorld();
@@ -407,6 +414,7 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
               </div>
             </div>
             <span className="absolute left-[7%] top-[5%] text-4xl select-none animate-twinkle">☀️</span>
+            <span className="absolute right-[16%] top-[10%] text-3xl select-none animate-twinkle" style={{ animationDelay: '.9s' }}>🌤️</span>
 
             {/* ---- 慢层：远山（rAF 直写位移） ---- */}
             <div className="absolute inset-x-0 top-[22%] h-[22%] overflow-hidden">
@@ -444,7 +452,7 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
               <div className="absolute inset-x-0 top-0 h-2 bg-white/15" />
               {/* 换道提示（铁律：↑↓ 换道，不是 A/S/D！） */}
               <div className="absolute left-3 top-1.5 text-[10px] font-black text-white/70 bg-black/25 px-2 py-0.5 rounded-lg">
-                ↑↓ 换道
+                ↑↓ / W S 换道
               </div>
 
               {/* 油桶障碍：从右侧滚来，近大远小（translate3d 定位） */}
@@ -600,23 +608,17 @@ export const RacingGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins, onB
 
       <div className="w-full story-card p-4 flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="text-xs text-[#8A6F5C] font-bold flex items-center gap-1.5">
-          <span>💡</span> 敲对路牌单词点燃氮气狂飙！↑↓ 键换道躲油桶，1000 米内超越兔子车手！
+          <span>💡</span> 敲对路牌单词点燃氮气狂飙！↑↓ 或 W/S 键换道躲油桶，1000 米内超越蓝车车手！
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => {
-              setLane(l => { const nl = Math.max(0, l - 1) as 0 | 1 | 2; laneRef.current = nl; return nl; });
-              playSoundEffect('whoosh', 0.15);
-            }}
+            onClick={() => switchLane(-1)}
             className="btn-candy bg-white text-[#8A6F5C] shadow-[0_5px_0_#E5D9C8] active:shadow-[0_1px_0_#E5D9C8] px-5 py-2.5 text-xs border-2 border-[#F0E4D2]"
           >
             ⬆ 上道
           </button>
           <button
-            onClick={() => {
-              setLane(l => { const nl = Math.min(2, l + 1) as 0 | 1 | 2; laneRef.current = nl; return nl; });
-              playSoundEffect('whoosh', 0.15);
-            }}
+            onClick={() => switchLane(1)}
             className="btn-candy bg-white text-[#8A6F5C] shadow-[0_5px_0_#E5D9C8] active:shadow-[0_1px_0_#E5D9C8] px-5 py-2.5 text-xs border-2 border-[#F0E4D2]"
           >
             ⬇ 下道

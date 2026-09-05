@@ -269,34 +269,34 @@ export const StoryGenerator: React.FC<StoryGeneratorProps> = ({
   const { genPct, genStageMsg, genStages } = useMemo(() => {
     if (!isLoading) return { genPct: 0, genStageMsg: '', genStages: [] as { icon: string; label: string; done: boolean }[] };
 
-    // 阶段完成判定（JSON 字段顺序：titleZh → storyZh → storyZhHk → storyEn → words）
+    // 阶段完成判定（JSON 字段顺序：titleZh → storyEn → words → storyZh → storyZhHk）
     const stages = [
       { icon: '🎨', label: '构思', done: !!partialPreview?.titleZh },
+      { icon: '🌍', label: '英文', done: !!partialPreview?.storyEn },
+      { icon: '🎯', label: '单词', done: (partialPreview?.wordsFound ?? 0) >= WORDS_TARGET },
       { icon: '📖', label: '中文', done: !!partialPreview?.storyZhHk },
-      { icon: '🗣️', label: '粤语', done: !!partialPreview?.storyEn },
-      { icon: '🌍', label: '英文', done: (partialPreview?.wordsFound ?? 0) > 0 },
-      { icon: '🎯', label: '单词', done: false }
+      { icon: '🗣️', label: '粤语', done: false }
     ];
 
     let pct = 4;
     let msg = '🪄 正在召唤故事精灵…';
     if (partialPreview?.titleZh) { pct = 10; msg = '✨ 想到故事啦，正在动笔！'; }
-    const zhLen = partialPreview?.storyZh?.length ?? 0;
-    if (zhLen > 0) {
-      pct = Math.max(pct, 10 + Math.min(32, Math.round(zhLen / 180 * 32)));
-      msg = zhLen < 60 ? '📖 中文故事开写咯…' : zhLen < 130 ? '📖 故事越来越精彩…' : '📖 中文故事写好啦！';
-    }
-    if (partialPreview?.storyZhHk) { pct = Math.max(pct, 46); msg = '🗣️ 变身地道粤语版…'; }
     const enLen = partialPreview?.storyEn?.length ?? 0;
     if (enLen > 0) {
-      pct = Math.max(pct, 50 + Math.min(30, Math.round(enLen / 700 * 30)));
-      msg = enLen < 250 ? '🌍 正在翻译成英文…' : '🌍 英文版快好啦！';
+      pct = Math.max(pct, 10 + Math.min(35, Math.round(enLen / 700 * 35)));
+      msg = enLen < 250 ? '🌍 英文故事创作中…' : '🌍 英文主稿完成！';
     }
     const wc = partialPreview?.wordsFound ?? 0;
     if (wc > 0) {
-      pct = Math.max(pct, 82 + Math.min(14, Math.round(wc / WORDS_TARGET * 14)));
+      pct = Math.max(pct, 48 + Math.min(20, Math.round(wc / WORDS_TARGET * 20)));
       msg = `🎯 正在挑选魔法单词 ${wc}/${WORDS_TARGET}…`;
     }
+    const zhLen = partialPreview?.storyZh?.length ?? 0;
+    if (zhLen > 0) {
+      pct = Math.max(pct, 70 + Math.min(20, Math.round(zhLen / 180 * 20)));
+      msg = zhLen < 60 ? '📖 翻译成中文故事开写咯…' : zhLen < 130 ? '📖 中文故事越来越精彩…' : '📖 中文故事写好啦！';
+    }
+    if (partialPreview?.storyZhHk) { pct = Math.max(pct, 92); msg = '🗣️ 变身地道粤语版…'; }
     return { genPct: Math.min(pct, 96), genStageMsg: msg, genStages: stages };
   }, [isLoading, partialPreview]);
 
@@ -496,12 +496,12 @@ export const StoryGenerator: React.FC<StoryGeneratorProps> = ({
                         const spoken = getSpokenZh(sentIdx);
                         speakDirect(spoken.text, spoken.lang, true);
                       }}
-                      className={`inline cursor-pointer select-none rounded-md px-1 transition-all duration-150 box-decoration-clone ${
+                      className={`story-sentence inline cursor-pointer select-none rounded-md px-1 transition-all duration-150 box-decoration-clone ${
                         isReading
-                          ? 'bg-[#FFC94D] text-[#5B4636] font-black ring-2 ring-[#E8A317] rounded-md shadow-sm'
+                          ? 'text-[#5B4636] font-black ring-2 ring-[#E8A317] rounded-md'
                           : isContainingHoveredWord
                           ? 'bg-[#FFF3D6]/60 text-[#7A4A00]'
-                          : 'hover:bg-[#FFF3D6]/40'
+                          : ''
                       }`}
                       title={zhDialect === 'cantonese' ? '点击用粤语朗读本句' : '点击朗读本句'}
                     >
@@ -545,12 +545,12 @@ export const StoryGenerator: React.FC<StoryGeneratorProps> = ({
                         setActiveReadingSentence(sent);
                         speakDirect(sent, 'en-US', true, { slow: true });
                       }}
-                      className={`inline cursor-pointer select-none rounded-md px-1 transition-all duration-150 box-decoration-clone ${
+                      className={`story-sentence inline cursor-pointer select-none rounded-md px-1 transition-all duration-150 box-decoration-clone ${
                         isReading
-                          ? 'bg-[#FFC94D] text-[#5B4636] font-black ring-2 ring-[#E8A317] rounded-md shadow-sm'
+                          ? 'text-[#5B4636] font-black ring-2 ring-[#E8A317] rounded-md'
                           : isContainingHoveredWord
                           ? 'bg-[#FFF3D6]/60 text-[#7A4A00]'
-                          : 'hover:bg-[#E3F2FA]/40'
+                          : ''
                       }`}
                       title="Click to read sentence"
                     >
@@ -649,25 +649,22 @@ export const StoryGenerator: React.FC<StoryGeneratorProps> = ({
                       {actualIdx + 1}
                     </span>
 
+                    {/* 左：英文单词 + 下方音标 */}
                     <div className="flex flex-col min-w-0 flex-1">
-                      <div className="flex items-baseline gap-1.5 flex-wrap">
-                        {/* Word (Prominent & Clear) */}
-                        <span className="text-xl md:text-2xl font-black text-[#5B4636] font-kids tracking-wide truncate">
-                          {item.word}
-                        </span>
-                        {/* Phonetic (+40% enlarged font size) */}
-                        {item.phonetic && (
-                          <span className="text-sm md:text-base text-[#8A6F5C] font-mono font-medium italic">
-                            {item.phonetic}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Translation (+40% enlarged font size) */}
-                      <span className={`text-base md:text-lg font-black ${palette.textColor} truncate mt-0.5`}>
-                        {item.translation}
+                      <span className="text-xl md:text-2xl font-black text-[#5B4636] font-kids tracking-wide truncate leading-tight">
+                        {item.word}
                       </span>
+                      {item.phonetic && (
+                        <span className="text-sm md:text-base text-[#8A6F5C] font-mono font-medium italic truncate leading-tight">
+                          {item.phonetic}
+                        </span>
+                      )}
                     </div>
+
+                    {/* 右：中文翻译（利用右侧空间，垂直居中） */}
+                    <span className={`text-base md:text-lg font-black ${palette.textColor} shrink-0 text-right leading-tight max-w-[38%]`}>
+                      {item.translation}
+                    </span>
                   </div>
                 </div>
               );

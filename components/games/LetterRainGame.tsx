@@ -155,44 +155,43 @@ const Umbrella: React.FC<{ open: boolean }> = ({ open }) => (
   </div>
 );
 
-// ============ 水滴形字母牌（上尖下圆的真水滴，字母在水滴肚子里） ============
+// ============ 拟真水滴字母牌（三圆角方块旋转45°的真水滴形 + 渐变高光 + 下落摆动 + 尾迹水丝） ============
 const DropLetter: React.FC<{ ch: string; typed?: boolean; small?: boolean }> = ({ ch, typed, small }) => {
-  const size = small ? 56 : 76;
+  const size = small ? 54 : 74;
   return (
-    <div className="relative flex flex-col items-center select-none" style={{ width: size + 8 }}>
-      {/* 水滴顶尖 */}
-      <div
-        className="w-0 h-0 border-l-transparent border-r-transparent"
-        style={{
-          borderLeftWidth: small ? 9 : 12,
-          borderRightWidth: small ? 9 : 12,
-          borderBottomWidth: small ? 15 : 20,
-          borderBottomColor: typed ? '#8ED0A8' : '#7FC4EE',
-        }}
-      />
-      {/* 水滴圆身 */}
-      <div
-        className={`rounded-full flex items-center justify-center border-[3px] border-white/90 -mt-1 ${
-          typed
-            ? 'bg-gradient-to-b from-[#A8E6C3] to-[#6BCB77]'
-            : 'bg-gradient-to-b from-[#9FD4F2] to-[#5FA8DD]'
-        }`}
-        style={{
-          width: size,
-          height: size,
-          boxShadow: typed
-            ? '0 4px 0 rgba(0,0,0,0.18), inset 0 -6px 10px rgba(0,90,40,0.18)'
-            : '0 4px 0 rgba(0,0,0,0.18), inset 0 -6px 10px rgba(0,70,130,0.22)',
-        }}
-      >
-        <span
-          className={`font-mono font-black text-white drop-shadow ${small ? 'text-4xl' : 'text-5xl'}`}
+    <div className="relative select-none" style={{ width: size, height: size * 1.2 }}>
+      {/* 尾迹水丝：水滴上方一条渐隐细线，强化"正在下落" */}
+      <div className="absolute left-1/2 -translate-x-1/2 -top-[24px] w-[3px] h-[24px] rounded-full bg-gradient-to-b from-transparent to-[#CFEAFB]/85 pointer-events-none" />
+      {/* 水滴主体：正方形只圆三个角再旋转45°，顶尖朝上 */}
+      <div className="relative w-full h-full" style={{ transform: 'rotate(45deg)' }}>
+        <div
+          className="absolute inset-0"
+          style={{
+            borderRadius: '0 50% 50% 50%',
+            background: typed
+              ? 'radial-gradient(circle at 30% 26%, #DCF7E8 0%, #A8E6C3 36%, #6BCB77 76%, #4FAE5D 100%)'
+              : 'radial-gradient(circle at 30% 26%, #E8F6FF 0%, #A8D8F5 36%, #5FA8DD 76%, #3E82B8 100%)',
+            boxShadow: typed
+              ? 'inset -7px -7px 12px rgba(20,90,40,0.30), inset 5px 7px 10px rgba(255,255,255,0.55), 0 5px 9px rgba(0,30,60,0.28)'
+              : 'inset -7px -7px 12px rgba(10,60,110,0.32), inset 5px 7px 10px rgba(255,255,255,0.55), 0 5px 9px rgba(0,30,60,0.28)',
+          }}
         >
-          {ch}
-        </span>
-        {/* 高光 */}
-        <span className="absolute left-[18%] top-[16%] w-[22%] h-[30%] bg-white/55 rounded-full blur-[1.5px] pointer-events-none" />
+          {/* 字母反向旋转回正 */}
+          <div className="absolute inset-0 flex items-center justify-center" style={{ transform: 'rotate(-45deg)' }}>
+            <span
+              className="font-mono font-black text-white"
+              style={{ fontSize: small ? 32 : 42, textShadow: '0 2px 4px rgba(0,40,80,0.45)' }}
+            >
+              {ch}
+            </span>
+          </div>
+        </div>
       </div>
+      {/* 表面高光：左上一道斜椭圆反光，玻璃感 */}
+      <span
+        className="absolute left-[16%] top-[10%] w-[30%] h-[16%] bg-white/75 rounded-full blur-[2px] pointer-events-none"
+        style={{ transform: 'rotate(-32deg)' }}
+      />
     </div>
   );
 };
@@ -408,8 +407,8 @@ export const LetterRainGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins,
       if (d.y >= UMBRELLA_Y) {
         hitCatch(d, Math.min(d.y, GROUND_Y - 10)); // 按晚了也照样接住
       } else {
-        // 敲对瞬间雨滴加速 3 倍落向伞面（不用干等它慢慢飘下来）
-        const fast = { ...d, speed: d.speed * 3 };
+        // 敲对瞬间雨滴下落速度加倍，冲向伞面（不用干等它慢慢飘下来）
+        const fast = { ...d, speed: d.speed * 2 };
         dropRef.current = fast;
         setDrop(fast);
       }
@@ -465,6 +464,7 @@ export const LetterRainGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins,
         @keyframes umbrellaPop { 0%{transform:scale(.1) rotate(-14deg)} 62%{transform:scale(1.14) rotate(4deg)} 100%{transform:scale(1) rotate(0deg)} }
         @keyframes dripFall { 0%{transform:translateY(0);opacity:0} 25%{opacity:1} 100%{transform:translateY(13px);opacity:0} }
         @keyframes bounceOff { 0%{transform:translate(-50%,-50%) translate(0,0) rotate(0deg);opacity:1} 100%{transform:translate(-50%,-50%) translate(var(--bx),var(--by)) rotate(var(--br));opacity:0} }
+        @keyframes dropSway { 0%,100%{transform:translate(-50%,-50%) rotate(-6deg)} 50%{transform:translate(-50%,-50%) rotate(6deg)} }
         .umbrella-open { animation: umbrellaPop .42s cubic-bezier(.34,1.4,.64,1) both; }
         .animate-drip { animation: dripFall .95s ease-in infinite; }
       `}</style>
@@ -519,9 +519,9 @@ export const LetterRainGame: React.FC<BaseGameProps> = ({ wordList, onEarnCoins,
             </div>
           </div>
 
-          {/* 字母雨滴（水滴形字母牌） */}
+          {/* 字母雨滴（拟真水滴 + 下落时左右轻摆） */}
           {drop && (
-            <div className="absolute z-20" style={{ left: `${drop.x}%`, top: drop.y, transform: 'translate(-50%,-50%)' }}>
+            <div className="absolute z-20" style={{ left: `${drop.x}%`, top: drop.y, animation: 'dropSway 1.5s ease-in-out infinite' }}>
               <DropLetter ch={drop.letter.toUpperCase()} />
             </div>
           )}

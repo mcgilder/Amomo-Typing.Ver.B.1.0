@@ -362,40 +362,40 @@ export const generateStoryWithVocabulary = async (
     const zhLen = wordCount === 15 ? '160-210' : '105-145';
     const enLen = wordCount === 15 ? '110-145' : '72-105';
 
-    const prompt = `# 任务：为主题"${topic}"创作一篇儿童双语故事（给6-8岁小朋友）
+    const prompt = `# 任务：为主题"${topic}"创作一篇儿童故事（给6-8岁小朋友）。**以英文故事为主稿**，再翻译成普通话与地道粤语。
 
-## 【故事质量铁律 —— 最高优先级】
-1. **主题铁律**：故事的一切人、物、场景必须围绕"${topic}"展开。绝不允许出现与主题无关的角色或设定硬闯进来（例如赛车故事里不能突然冒出宇航员/魔法师，森林故事里不能出现机器人）。如果某个生词与主题冲突，宁可放弃那个词也要保住故事的逻辑！
+## 【英文主稿 storyEn —— 一切的源头】
+1. **主题铁律**：故事的一切人、物、场景必须围绕"${topic}"展开。绝不允许出现与主题无关的角色或设定硬闯进来（例如赛车故事里不能突然冒出宇航员/魔法师）。如果某个生词与主题冲突，宁可放弃那个词也要保住故事的逻辑！
 2. **完整故事结构**（四幕，缺一不可）：
    - 开头：介绍主角和TA的小目标或小麻烦（1-2句）
    - 发展：主角遇到一个具体困难或挑战，有具体的行动过程（2-3句）
    - 高潮：困难被解决的关键瞬间，要有画面感（1-2句）
    - 结尾：主角的收获/成长，或温暖的小结局（1句）
-3. **因果链条**：每一句都要承接上一句。人物做A是因为前文发生了B。绝对禁止"流水账式场景跳转"（例如：他穿过森林→跳过桥梁→来到城堡→遇到宇航员→庆祝胜利，这种没有因果的排列）。
-4. **生动技巧**：多用角色的动作、对话、心理（"小赛车手握紧方向盘，心怦怦跳"），少用"美丽的、壮观的、神奇的"这类空泛形容词堆砌。
+3. **因果链条**：每一句都要承接上一句。人物做A是因为前文发生了B。绝对禁止"流水账式场景跳转"。
+4. **生动技巧**：多用角色的动作、对话、心理描写，少用空泛形容词堆砌。
+5. 长度约 ${enLen} 个单词，用词简单，句子简短（每句一个完整意思，句号分句清晰）。
 
-## 【反例警示】（禁止写成这样）
-❌ 坏故事："小明穿越了森林，跳过了桥梁，来到城堡，遇到宇航员，一起庆祝胜利。"（场景硬跳、宇航员无来由、没有因果）
-✅ 好故事："小赛车手阿明第一次参加森林卡丁车赛。弯道太多，他总是冲出赛道。教练教他：进弯前先松油门。决赛最后一圈，阿明深吸一口气，提前减速，稳稳过弯，第一个冲过终点线！"
-
-## 【生词要求】
+## 【生词 words —— 必须逐字来自 storyEn 原文】
 1. 生词总数：**恰好 ${wordCount} 个**（Level 1 恰好 ${n1} 个、Level 2 恰好 ${n2} 个、Level 3 恰好 ${n3} 个，按难度升序排列）！
-2. 所有生词必须：①与"${topic}"主题强相关；②自然出现在故事正文中；③中文翻译为双字及以上规范词（严禁单字）。
-3. 中文故事（storyZh）约${zhLen}字，英文故事（storyEn）约${enLen}词，都必须自然包含全部生词。
+2. **每个 word 必须【逐字原样】出现在上面英文故事正文里**（从原文复制，严禁任何变形：不允许复数、时态、比较级变化）。storyEn 里找不到的词绝对不允许出现。
+3. 所有生词与"${topic}"主题强相关；translation 为双字及以上规范中文词（严禁单字）。
 
-## 【粤语口语版（storyZhHk）】
-逐句转写地道粤语口语（用係/喺/嘅/咗/唔/佢/哋/睇/嚟等白话字+"喇/吖/喎"语气词，像香港儿歌主持讲故事），用 || 分隔句子，句数与中文故事严格一一对应。
+## 【普通话版 storyZh —— 由英文主稿翻译而来】
+逐句忠实翻译 storyEn（意思一一对应，不增删情节），约${zhLen}字；**句子数量与 storyEn 严格一致**，句号分句。translation 中的中文词必须以相同字样出现在 storyZh 里。
 
-## 【输出 JSON】（只输出 JSON，不要任何其他文字）
+## 【粤语版 storyZhHk —— 由 storyZh 转写成地道粤语口语】
+逐句转写地道粤语（用係/喺/嘅/咗/唔/佢/哋/睇/嚟/冇等白话字+"喇/吖/喎/添"语气词，像香港儿童节目主持讲故事），**用繁体字书写**，用 || 分隔句子，**句数与 storyZh 严格一一对应**。
+
+## 【输出 JSON】（只输出 JSON，不要任何其他文字；严格按以下字段顺序输出）
 {
   "titleZh": "中文标题",
   "titleEn": "英文标题",
-  "storyZh": "中文故事正文",
-  "storyZhHk": "粤语句子1||粤语句子2||...",
   "storyEn": "英文故事正文",
   "words": [
-    { "word": "英文原词", "phonetic": "/音标/", "translation": "中文对应词", "level": 1, "example": "简短例句" }
-  ]
+    { "word": "英文原词（逐字来自storyEn）", "phonetic": "/音标/", "translation": "中文对应词", "level": 1, "example": "简短例句" }
+  ],
+  "storyZh": "普通话故事正文",
+  "storyZhHk": "粤语句子1||粤语句子2||..."
 }`;
 
     const raw = await callLLM(prompt, onProgress ? (acc: string) => {
@@ -420,21 +420,36 @@ export const generateStoryWithVocabulary = async (
       // 去重后截取
       let finalWords = norm.filter((w, i, arr) => arr.findIndex(x => x.word.toLowerCase() === w.word.toLowerCase()) === i).slice(0, wordCount);
 
+      // 【硬校验】生词必须逐字出现在英文正文里（大小写不敏感、词边界匹配），
+      // 未出现的直接剔除——根治"选出来的词不在故事文章中"的问题
+      const storyEnBody = String(parsed.storyEn || '');
+      const wordInStory = (w: string) => {
+        try {
+          return new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(storyEnBody);
+        } catch { return true; }
+      };
+      finalWords = finalWords.filter(w => wordInStory(w.word));
+
       // AI 偶尔少交付（如9个）：发一个快速小请求补齐到目标数量
       if (finalWords.length < wordCount) {
         const missing = wordCount - finalWords.length;
         try {
-          const topUpPrompt = `为主题"${topic}"的儿童故事补充 ${missing} 个英文生词（与故事内容相关、难度适合6-8岁小朋友）。
-已有生词（严禁重复）：${finalWords.map(w => w.word).join(', ')}。
+          const topUpPrompt = `下面是一篇儿童英文故事：
+"""
+${storyEnBody.slice(0, 1200)}
+"""
+从故事原文中再挑选 ${missing} 个已出现的英文单词作为生词（与主题"${topic}"相关、适合6-8岁、**逐字原样来自上文故事**，严禁变形或编造故事里没有的词）。
+已有生词（严禁重复）：${finalWords.map(w => w.word).join(', ') || '（无）'}。
 只输出JSON数组，格式：[{"word":"英文词","phonetic":"/音标/","translation":"双字及以上中文词","level":1,"example":"简短例句"}]`;
           const raw2 = await callLLM(topUpPrompt);
           const extra = extractJson(raw2 || '');
           if (Array.isArray(extra)) {
             for (const w of extra) {
               if (finalWords.length >= wordCount) break;
-              if (w?.word && w?.translation && !finalWords.some(f => f.word.toLowerCase() === String(w.word).trim().toLowerCase())) {
+              const cand = String(w?.word || '').trim();
+              if (cand && w?.translation && wordInStory(cand) && !finalWords.some(f => f.word.toLowerCase() === cand.toLowerCase())) {
                 finalWords.push({
-                  word: String(w.word).trim(),
+                  word: cand,
                   phonetic: w.phonetic || '',
                   translation: String(w.translation).trim(),
                   level: (w.level === 1 || w.level === 2 || w.level === 3 ? w.level : 2) as 1 | 2 | 3,

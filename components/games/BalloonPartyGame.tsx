@@ -125,7 +125,7 @@ const ConfettiBurst: React.FC<Burst> = ({ x, y, color, smoke }) => {
 };
 
 // ============ 小寿星（CSS 手绘，表情随战况变化：开心/叹气/吓到；右手举玩具枪） ============
-const Kid: React.FC<{ mood: KidMood }> = ({ mood }) => (
+const Kid: React.FC<{ mood: KidMood; muzzleRef?: React.RefObject<HTMLDivElement | null> }> = ({ mood, muzzleRef }) => (
   <div className="relative flex flex-col items-center select-none">
     {/* 叹气泡泡 */}
     {mood === 'sad' && (
@@ -186,8 +186,8 @@ const Kid: React.FC<{ mood: KidMood }> = ({ mood }) => (
         <div className="absolute inset-x-0 top-0 h-[9px] rounded-[4px] bg-gradient-to-b from-[#FF8A5C] to-[#E0633A] border-2 border-[#C4451F]" />
         {/* 枪身握把 */}
         <div className="absolute left-[2px] top-[7px] w-[10px] h-[10px] rounded-[3px] bg-[#E0633A] border-2 border-[#C4451F]" />
-        {/* 枪口准星 */}
-        <div className="absolute -right-[3px] top-[-4px] w-[7px] h-[4px] rounded-r-full bg-[#4FB8E7] border border-[#2E93C4]" />
+        {/* 枪口准星（弹道起点：实测此元素坐标） */}
+        <div ref={muzzleRef} className="absolute -right-[3px] top-[-4px] w-[7px] h-[4px] rounded-r-full bg-[#4FB8E7] border border-[#2E93C4]" />
         {/* 开火闪光 */}
         {mood === 'happy' && (
           <span className="absolute -right-[12px] -top-[6px] text-[11px] leading-none select-none" style={{ animation: 'fuseSpark 0.2s ease-out' }}>✨</span>
@@ -215,6 +215,7 @@ export const BalloonPartyGame: React.FC<BaseGameProps> = ({ onEarnCoins, onBack,
   const { addScore, Layer: ScoreLayer } = useFloatScores();
 
   const boardRef = useRef<HTMLDivElement>(null);
+  const muzzleRef = useRef<HTMLDivElement | null>(null);   // 枪口元素：弹道起点实测用
   const balloonsRef = useRef<Balloon[]>([]);
   const comboRef = useRef(0);
   const popsRef = useRef(0);
@@ -292,10 +293,13 @@ export const BalloonPartyGame: React.FC<BaseGameProps> = ({ onEarnCoins, onBack,
 
   // 敲对！气球炸开（枪口弹道 + 爆开丝带）
   const popBalloon = useCallback((b: Balloon) => {
-    // 弹道痕迹：从小寿星的枪口射向气球
-    const bw = boardRef.current?.getBoundingClientRect().width ?? 800;
+    // 弹道痕迹：实测枪口坐标射向气球（不再写死起点，杜绝从蛋糕开枪）
+    const boardRect = boardRef.current?.getBoundingClientRect();
+    const muzRect = muzzleRef.current?.getBoundingClientRect();
+    const sx = boardRect && muzRect ? muzRect.right - boardRect.left - 2 : (boardRect?.width ?? 800) / 2 - 56;
+    const sy = boardRect && muzRect ? muzRect.top + muzRect.height / 2 - boardRect.top : 352;
     const tid = uid();
-    setTraces(prev => [...prev, { id: tid, x1: bw / 2 + 42, y1: 372, x2: px(b.x), y2: b.y }]);
+    setTraces(prev => [...prev, { id: tid, x1: sx, y1: sy, x2: px(b.x), y2: b.y }]);
     setTimeout(() => setTraces(prev => prev.filter(t => t.id !== tid)), 260);
     removeBalloon(b.id);
     playSoundEffect('pop', 0.3);
@@ -640,7 +644,7 @@ export const BalloonPartyGame: React.FC<BaseGameProps> = ({ onEarnCoins, onBack,
 
           {/* 小寿星 + 蛋糕 + 礼物 */}
           <div className="absolute bottom-[10px] inset-x-0 z-20 flex items-end justify-center gap-10 select-none pointer-events-none">
-            <Kid mood={kidMood} />
+            <Kid mood={kidMood} muzzleRef={muzzleRef} />
             <span className="text-[52px] leading-none animate-float-y">🎂</span>
             <div className="flex items-end gap-1">
               <span className="text-2xl">🎁</span>

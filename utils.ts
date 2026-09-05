@@ -779,9 +779,11 @@ let currentEdgeAudio: HTMLAudioElement | null = null;
 let currentEdgeStop: (() => void) | null = null;
 let isPraiseSpeaking = false;        // 夸奖语音播放锁
 const edgeAudioCache = new Map<string, string>();  // key → blobURL
+let speechSeq = 0;                   // 朗读会话序号：打断后旧分块循环自动退出
 
-/** 统一打断：立即停止所有正在进行的朗读（Edge 音频 + 浏览器 TTS） */
+/** 统一打断：立即停止所有正在进行的朗读（Edge 音频 + 浏览器 TTS + 分块队列） */
 export const stopAllSpeech = () => {
+  speechSeq++;                       // 使进行中的分块播放循环失效
   // 打断 Edge 神经语音播放
   if (currentEdgeAudio) {
     try { currentEdgeAudio.pause(); currentEdgeAudio.currentTime = 0; } catch { /* ignore */ }
@@ -800,6 +802,21 @@ export const stopAllSpeech = () => {
   isPraiseSpeaking = false;
 };
 
+/** 长文本按句分块（≤maxLen）：分块合成+顺序播放，首句即出声，杜绝整篇等待与超时 */
+const splitSpeechChunks = (text: string, maxLen = 70): string[] => {
+  const sentences = text.replace(/\r?\n+/g, '。').match(/[^。！？!?.]+[。！？!?.]*|.+/g) || [text];
+  const chunks: string[] = [];
+  let cur = '';
+  for (const s of sentences) {
+    const t = s.trim();
+    if (!t) continue;
+    if (cur && (cur + t).length > maxLen) { chunks.push(cur); cur = t; }
+    else cur += t;
+  }
+  if (cur.trim()) chunks.push(cur.trim());
+  return chunks.length ? chunks : [text];
+};
+
 const markEdgeResult = (ok: boolean) => {
   if (ok) { edgeTtsFailCount = 0; return; }
   edgeTtsFailCount++;
@@ -810,19 +827,20 @@ const markEdgeResult = (ok: boolean) => {
 export const edgeTtsSpeak = (
   text: string,
   lang: 'zh-CN' | 'en-US' | 'zh-HK',
-  opts?: { rate?: number; voice?: string; onFinish?: () => void }
+  opts?: { rate?: number; pitch?: number; voice?: string; onFinish?: () => void }
 ): Promise<boolean> => {
   if (edgeTtsDead || !text) return Promise.resolve(false);
   const voice = opts?.voice || EDGE_VOICES[lang] || EDGE_VOICES['zh-CN'];
   const rate = opts?.rate ?? EDGE_BASE_RATES[lang] ?? 0;
-  const key = `${voice}|${rate}|${text}`;
+  const pitch = opts?.pitch ?? 0;
+  const key = `${voice}|${rate}|${pitch}|${text}`;
 
   return (async (): Promise<boolean> => {
     try {
       // 缓存命中则直接播放（预取保证打字练习零延迟）
       let url = edgeAudioCache.get(key);
       if (!url) {
-        const resp = await fetch(`/api/tts?voice=${voice}&rate=${rate}&text=${encodeURIComponent(text)}`);
+        const resp = await fetch(`/api/tts?voice=${voice}&rate=${rate}&pitch=${pitch}&text=${encodeURIComponent(text)}`);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const blob = await resp.blob();
         if (blob.size < 200) throw new Error('empty audio');
@@ -863,13 +881,13 @@ export const edgeTtsSpeak = (
 };
 
 /** 预取音频到缓存（不播放）：让下一个词的朗读零延迟 */
-const prefetchEdgeTts = (text: string, lang: 'zh-CN' | 'en-US' | 'zh-HK') => {
+const prefetchEdgeTts = (text: string, lang: 'zh-CN' | 'en-US' | 'zh-HK', pitch: number = 0) => {
   if (edgeTtsDead || !text) return;
   const voice = EDGE_VOICES[lang] || EDGE_VOICES['zh-CN'];
   const rate = EDGE_BASE_RATES[lang] ?? 0;
-  const key = `${voice}|${rate}|${text}`;
+  const key = `${voice}|${rate}|${pitch}|${text}`;
   if (edgeAudioCache.has(key)) return;
-  fetch(`/api/tts?voice=${voice}&rate=${rate}&text=${encodeURIComponent(text)}`)
+  fetch(`/api/tts?voice=${voice}&rate=${rate}&pitch=${pitch}&text=${encodeURIComponent(text)}`)
     .then(async resp => {
       if (!resp.ok) return;
       const blob = await resp.blob();
@@ -1104,6 +1122,8 @@ export const speakDirect = (
   }
   // 每次新朗读前先打断上一段（切换语音/点句/点按钮都从这里进，保证即点即断）
   stopAllSpeech();
+  const mySeq = speechSeq;
+  const cancelled = () => mySeq !== speechSeq;
 
   // If Cantonese requested:已是地道粤语（含粤语口语字）则直接朗读，否则做普通话→粤语口语转换
   const isAlreadyCantonese = /係|喺|嘅|咗|唔|佢|哋|畀|嘢|嚟|睇|喇|喎|吖/.test(text);
@@ -1113,27 +1133,51 @@ export const speakDirect = (
   // slow：语速整体 ×0.85（Edge rate 按速度百分比换算，浏览器按 rate 乘法）
   const edgeBase = EDGE_BASE_RATES[lang] ?? 0;
   const edgeRate = opts?.slow ? Math.round(((1 + edgeBase / 100) * 0.85 - 1) * 100) : edgeBase;
-  edgeTtsSpeak(spokenText, lang, { rate: edgeRate }).then((ok) => {
-    if (ok) return;
-    if (!window.speechSynthesis) return;
-    try {
-      if (forceCancel) {
-        isPraiseSpeaking = false;
-        window.speechSynthesis.cancel();
-      }
+  const baseRate = lang === 'en-US' ? 0.88 : (lang === 'zh-HK' ? 0.98 : 0.95);
 
-      const utterance = new SpeechSynthesisUtterance(spokenText);
+  // 浏览器回退朗读（speechSynthesis 自动排队，stopAllSpeech 里 cancel 清空队列）
+  const browserSpeak = (txt: string) => {
+    try {
+      if (!window.speechSynthesis) return;
+      if (forceCancel) isPraiseSpeaking = false;
+      const utterance = new SpeechSynthesisUtterance(txt);
       utterance.lang = lang;
-      // Optimal human prosody and melodic continuity
-      const baseRate = lang === 'en-US' ? 0.88 : (lang === 'zh-HK' ? 0.98 : 0.95);
       utterance.rate = opts?.slow ? baseRate * 0.85 : baseRate;
-      utterance.pitch = 1.0; // 1.0 preserves natural human tone contours and prevents robotic stutter
+      utterance.pitch = 1.0;
       const voice = getVoiceForLang(lang);
       if (voice) utterance.voice = voice;
       window.speechSynthesis.speak(utterance);
     } catch (e) {
       console.warn('TTS error:', e);
     }
+  };
+
+  // ===== 长文本（整篇故事）：按句分块顺序播放 =====
+  // 首句即出声；播放第 i 块时预取第 i+1 块（消除句间卡顿）；
+  // 奇数块音高 +3Hz 微交替，朗读更富语气变化
+  const chunks = spokenText.length > 60 ? splitSpeechChunks(spokenText) : [spokenText];
+  if (chunks.length > 1) {
+    (async () => {
+      let edgeBroken = false;
+      for (let i = 0; i < chunks.length; i++) {
+        if (cancelled()) return;
+        if (i + 1 < chunks.length) prefetchEdgeTts(chunks[i + 1], lang, i % 2 === 0 ? 3 : 0);
+        if (!edgeBroken) {
+          const ok = await edgeTtsSpeak(chunks[i], lang, { rate: edgeRate, pitch: i % 2 === 1 ? 3 : 0 });
+          if (cancelled()) return;
+          if (ok) continue;
+          edgeBroken = true;   // Edge 不可用：剩余块回退浏览器队列（自动按顺序播）
+        }
+        browserSpeak(chunks[i]);
+      }
+    })();
+    return;
+  }
+
+  edgeTtsSpeak(spokenText, lang, { rate: edgeRate }).then((ok) => {
+    if (ok) return;
+    if (cancelled()) return;
+    browserSpeak(spokenText);
   });
 };
 
